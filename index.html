@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タイピング練習 - 日本語入力</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  background: #eef2f7;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+/* ── HEADER ── */
+header {
+  background: #6b82a8;
+  color: white;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  flex-shrink: 0;
+}
+.hdr-left { display: flex; align-items: baseline; gap: 10px; }
+.hdr-title { font-size: 18px; font-weight: bold; }
+.hdr-sub { font-size: 13px; opacity: 0.8; }
+.hdr-right { display: flex; align-items: center; gap: 12px; }
+.timer-label { font-size: 13px; }
+.timer-bar-bg {
+  width: 180px; height: 14px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 7px; overflow: hidden;
+}
+.timer-bar-fill {
+  height: 100%; width: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  border-radius: 7px;
+  transition: width 1s linear;
+}
+.timer-bar-fill.warn { background: linear-gradient(90deg, #ff9800, #ffc107); }
+.timer-bar-fill.danger { background: linear-gradient(90deg, #f44336, #ff5722); }
+.timer-text { font-size: 16px; font-weight: bold; min-width: 90px; text-align: right; }
+.btn-end {
+  background: #e74c3c; color: white; border: none;
+  border-radius: 20px; padding: 6px 18px;
+  cursor: pointer; font-size: 14px; font-weight: bold;
+}
+.btn-end:hover { background: #c0392b; }
+
+/* ── GAME AREA ── */
+.game-area {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; padding: 20px 16px; gap: 16px;
+}
+
+/* Score */
+.score-box {
+  display: flex; align-items: stretch;
+  background: white; border-radius: 8px; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.score-label {
+  background: #6b82a8; color: white;
+  padding: 10px 18px; font-size: 14px; font-weight: bold;
+  display: flex; align-items: center;
+}
+.score-value {
+  padding: 10px 24px; font-size: 26px; font-weight: bold;
+  color: #e67e22; min-width: 80px; text-align: center;
+}
+
+/* Sentence */
+.sentence-box {
+  text-align: center; background: white; border-radius: 12px;
+  padding: 22px 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  min-width: 520px; max-width: 800px; width: 100%;
+}
+.kanji-text { font-size: 30px; color: #2196f3; margin-bottom: 8px; line-height: 1.5; }
+.hira-text { font-size: 15px; color: #666; margin-bottom: 6px; }
+.romaji-text {
+  font-size: 20px; font-weight: bold; letter-spacing: 1px;
+  font-family: 'Courier New', Courier, monospace; line-height: 2;
+  min-height: 44px; word-break: break-all;
+}
+.r-done { color: #bbb; }
+.r-cursor {
+  color: #1565c0; background: #bbdefb; border-radius: 3px; padding: 0 2px;
+  animation: blink-bg 1s step-end infinite;
+}
+.r-cursor.wrong { background: #ffcdd2; color: #c62828; animation: shake 0.3s ease; }
+@keyframes blink-bg { 50% { background: #90caf9; } }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.r-todo { color: #333; }
+
+/* Keyboard */
+.keyboard-wrap {
+  background: #d4d8e1;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+  position: relative;
+  overflow: visible;
+}
+.key-row {
+  display: flex; gap: 5px; margin-bottom: 5px;
+  justify-content: center;
+}
+.key-row:last-child { margin-bottom: 0; }
+.key {
+  height: 48px; min-width: 48px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: bold;
+  cursor: default;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.3);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.1s;
+  position: relative; padding: 0 8px;
+}
+.key.pressed { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
+.key.next-key {
+  outline: 3px solid rgba(255,255,255,0.9);
+  outline-offset: 1px;
+  animation: key-pulse 0.6s ease-in-out infinite alternate;
+  z-index: 2;
+}
+@keyframes key-pulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.35) saturate(1.2); }
+}
+.key.home-pos::after {
+  content: '';
+  position: absolute; bottom: 5px;
+  width: 8px; height: 3px;
+  background: rgba(255,255,255,0.6); border-radius: 2px;
+}
+
+/* All keys same neutral color */
+.key { background: #c8ccd8; color: #333; }
+
+/* Key size variants */
+.key-w15 { min-width: 72px; }
+.key-w20 { min-width: 96px; }
+.key-sp { min-width: 340px; }
+
+/* ── FINGER GUIDE ── */
+.finger-guide {
+  display: flex; align-items: center; gap: 24px;
+  background: white; border-radius: 12px;
+  padding: 14px 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.hand-section { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.hand-label { font-size: 13px; font-weight: bold; color: #555; }
+.hand-fingers { display: flex; gap: 4px; align-items: flex-end; }
+.fng-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.fng-bar {
+  width: 32px; border-radius: 14px 14px 4px 4px;
+  background: #ccc;
+  opacity: 0.4; transition: background 0.15s, opacity 0.15s, transform 0.15s;
+}
+.fng-bar.active { background: #e74c3c; opacity: 1; transform: translateY(-5px); }
+.fng-name { font-size: 9px; color: #777; text-align: center; line-height: 1.3; }
+
+/* Heights per finger (pinky shortest, middle tallest) */
+.fng-lp .fng-bar { height: 44px; }
+.fng-lr .fng-bar { height: 56px; }
+.fng-lm .fng-bar { height: 64px; }
+.fng-li .fng-bar { height: 56px; }
+.fng-ri .fng-bar { height: 56px; }
+.fng-rm .fng-bar { height: 64px; }
+.fng-rr .fng-bar { height: 56px; }
+.fng-rp .fng-bar { height: 44px; }
+.fng-th .fng-bar { height: 36px; border-radius: 6px; width: 36px; }
+
+/* Center info */
+.center-info { text-align: center; padding: 0 12px; }
+.ci-label { font-size: 11px; color: #999; margin-bottom: 4px; }
+.ci-key {
+  width: 52px; height: 52px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: bold; color: white;
+  background: #e74c3c;
+  margin: 0 auto 6px;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+}
+.ci-finger { color: #e74c3c; }
+.ci-finger { font-size: 13px; font-weight: bold; color: #333; }
+
+/* ── OVERLAYS ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.overlay.hidden { display: none; }
+.ov-box {
+  background: white; border-radius: 18px; padding: 40px 56px;
+  text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  max-width: 500px; width: 90%;
+}
+.ov-title { font-size: 26px; font-weight: bold; color: #333; margin-bottom: 14px; }
+.ov-desc { color: #666; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+.home-guide {
+  background: #f4f8ff; border-radius: 10px; padding: 16px;
+  text-align: left; font-size: 13px; color: #444; margin-bottom: 20px; line-height: 1.9;
+}
+.home-guide strong { display: block; margin-bottom: 4px; color: #2196f3; font-size: 14px; }
+.color-chip {
+  display: inline-block; width: 12px; height: 12px;
+  border-radius: 3px; vertical-align: middle; margin-right: 4px;
+}
+.result-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin: 20px 0;
+}
+.stat-card { background: #f5f5f5; border-radius: 10px; padding: 14px 10px; }
+.stat-label { font-size: 12px; color: #999; margin-bottom: 4px; }
+.stat-val { font-size: 28px; font-weight: bold; color: #333; }
+.btn-primary {
+  background: #2196f3; color: white; border: none;
+  border-radius: 10px; padding: 14px 48px;
+  font-size: 18px; font-weight: bold; cursor: pointer;
+  margin-top: 8px; transition: background 0.2s;
+}
+.btn-primary:hover { background: #1565c0; }
+.btn-green { background: #4caf50; }
+.btn-green:hover { background: #388e3c; }
+
+/* Mistake flash overlay on sentence box */
+.sentence-box.error-flash { animation: err-flash 0.3s ease; }
+@keyframes err-flash {
+  0%,100% { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  50% { box-shadow: 0 0 0 4px rgba(231,76,60,0.4); }
+}
+
+/* Correct flash */
+.sentence-box.ok-flash { animation: ok-flash 0.25s ease; }
+@keyframes ok-flash {
+  0%,100% { background: white; }
+  50% { background: #e8f5e9; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr-left">
+    <span class="hdr-title">タイピング練習</span>
+    <span class="hdr-sub">日本語入力</span>
+  </div>
+  <div class="hdr-right">
+    <span class="timer-label">残り時間</span>
+    <div class="timer-bar-bg">
+      <div class="timer-bar-fill" id="timerBar"></div>
+    </div>
+    <div class="timer-text" id="timerText">5分 00秒</div>
+    <button class="btn-end" onclick="endGame()">✕ 終了</button>
+  </div>
+</header>
+
+<!-- GAME AREA -->
+<div class="game-area" id="gameArea">
+  <div class="score-box">
+    <div class="score-label">入力文字数</div>
+    <div class="score-value" id="charCount">0</div>
+  </div>
+
+  <div class="sentence-box" id="sentenceBox">
+    <div class="kanji-text" id="kanjiText">　</div>
+    <div class="hira-text" id="hiraText">　</div>
+    <div class="romaji-text" id="romajiText">　</div>
+  </div>
+
+  <div class="keyboard-wrap" id="keyboard"></div>
+
+  <div class="finger-guide" id="fingerGuide"></div>
+</div>
+
+<!-- START OVERLAY -->
+<div class="overlay" id="startScreen">
+  <div class="ov-box">
+    <div class="ov-title">🎹 タイピング練習</div>
+    <p class="ov-desc">ホームポジションを意識しながら日本語をタイピング！<br>キーの色は使う指を表しています。</p>
+    <div class="home-guide">
+      <strong>ホームポジション（指の基本位置）</strong>
+      <span class="color-chip" style="background:#4472C4"></span>左小指 → <kbd>A</kbd> &nbsp;
+      <span class="color-chip" style="background:#70AD47"></span>左薬指 → <kbd>S</kbd> &nbsp;
+      <span class="color-chip" style="background:#FFC000"></span>左中指 → <kbd>D</kbd><br>
+      <span class="color-chip" style="background:#E74C3C"></span>左人差し指 → <kbd>F</kbd> &nbsp;&nbsp;
+      <span class="color-chip" style="background:#E74C3C"></span>右人差し指 → <kbd>J</kbd><br>
+      <span class="color-chip" style="background:#FFC000"></span>右中指 → <kbd>K</kbd> &nbsp;
+      <span class="color-chip" style="background:#70AD47"></span>右薬指 → <kbd>L</kbd> &nbsp;
+      <span class="color-chip" style="background:#4472C4"></span>右小指 → <kbd>;</kbd><br>
+      <span class="color-chip" style="background:#8e44ad"></span>両親指 → スペースキー<br><br>
+      <em>💡 FとJには突起があります。目を閉じても確認できます！</em>
+    </div>
+    <button class="btn-primary btn-green" onclick="startGame()">スタート！</button>
+  </div>
+</div>
+
+<!-- RESULT OVERLAY -->
+<div class="overlay hidden" id="resultScreen">
+  <div class="ov-box">
+    <div class="ov-title">結果発表</div>
+    <div class="result-grid">
+      <div class="stat-card">
+        <div class="stat-label">入力文字数</div>
+        <div class="stat-val" id="rChars">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">完了文章数</div>
+        <div class="stat-val" id="rSentences">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ミスタイプ</div>
+        <div class="stat-val" id="rMistakes">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">正確率</div>
+        <div class="stat-val" id="rAccuracy">—</div>
+      </div>
+    </div>
+    <button class="btn-primary btn-green" onclick="startGame()">もう一度</button>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+const TOTAL_SEC = 300;
+
+// Romaji uses standard JIS romaji input rules
+const SENTENCES = [
+  // 日常生活
+  { kanji: '毎朝早く起きます。',           hira: 'まいあさはやくおきます。',             romaji: 'MAIASAHAYAKUOKIMASU.' },
+  { kanji: '夜遅く寝ます。',               hira: 'よるおそくねます。',                   romaji: 'YORUOSOKUNEMASU.' },
+  { kanji: '朝ごはんを食べました。',       hira: 'あさごはんをたべました。',             romaji: 'ASAGOHANWOTABEMASITA.' },
+  { kanji: '水をたくさん飲みます。',       hira: 'みずをたくさんのみます。',             romaji: 'MIZUWOTAKUSANNOMIMASU.' },
+  { kanji: '手をきれいに洗います。',       hira: 'てをきれいにあらいます。',             romaji: 'TEWOKIREINIARAIMASU.' },
+  { kanji: '歯を磨きます。',               hira: 'はをみがきます。',                     romaji: 'HAWOMIGAKIMASU.' },
+  { kanji: 'お風呂に入ります。',           hira: 'おふろにはいります。',                 romaji: 'OHURONIHAIRIMASU.' },
+  { kanji: '電気を消します。',             hira: 'でんきをけします。',                   romaji: 'DENKIWOKESIMASU.' },
+  { kanji: '窓を開けます。',               hira: 'まどをあけます。',                     romaji: 'MADOWOAKEMASU.' },
+  { kanji: '部屋を掃除します。',           hira: 'へやをそうじします。',                 romaji: 'HEYAWOSOUZISIMASU.' },
+  { kanji: '鍵をかけます。',               hira: 'かぎをかけます。',                     romaji: 'KAGIWOKAKEMASU.' },
+  { kanji: '新聞を読みます。',             hira: 'しんぶんをよみます。',                 romaji: 'SINBUNWOYOMIMASU.' },
+  { kanji: '音楽を聴きます。',             hira: 'おんがくをききます。',                 romaji: 'ONGAKUWOKIKIMASU.' },
+  { kanji: '映画を見ます。',               hira: 'えいがをみます。',                     romaji: 'EIGAWOMIMASU.' },
+  { kanji: '友達と話します。',             hira: 'ともだちとはなします。',               romaji: 'TOMODATITOHANASIMASU.' },
+  { kanji: '電話をかけます。',             hira: 'でんわをかけます。',                   romaji: 'DENWAWOKAKEMASU.' },
+  { kanji: '手紙を書きます。',             hira: 'てがみをかきます。',                   romaji: 'TEGAMIWOKAKIMASU.' },
+  { kanji: '料理を作ります。',             hira: 'りょうりをつくります。',               romaji: 'RYOURIWOTUKURIMASU.' },
+  { kanji: '犬と散歩します。',             hira: 'いぬとさんぽします。',                 romaji: 'INUTOSANPOSIMASU.' },
+  { kanji: '本を読むのが好きです。',       hira: 'ほんをよむのがすきです。',             romaji: 'HONWOYOMUNOGASUKIDESU.' },
+  // 食べ物
+  { kanji: 'りんごを食べます。',           hira: 'りんごをたべます。',                   romaji: 'RINGOWOTABEMASU.' },
+  { kanji: 'ご飯を炊きます。',             hira: 'ごはんをたきます。',                   romaji: 'GOHANWOTAKIMASU.' },
+  { kanji: '野菜が好きです。',             hira: 'やさいがすきです。',                   romaji: 'YASAIGASUKIDESU.' },
+  { kanji: '魚を焼きます。',               hira: 'さかなをやきます。',                   romaji: 'SAKANAWOYAKIMASU.' },
+  { kanji: '卵を割ります。',               hira: 'たまごをわります。',                   romaji: 'TAMAGOWOWARIMASU.' },
+  { kanji: 'みそ汁を作ります。',           hira: 'みそしるをつくります。',               romaji: 'MISOSIRUWOTUKURIMASU.' },
+  { kanji: 'お茶を入れます。',             hira: 'おちゃをいれます。',                   romaji: 'OTYAWOIREMASU.' },
+  { kanji: '塩を入れます。',               hira: 'しおをいれます。',                     romaji: 'SIOWOIREMASU.' },
+  { kanji: '果物が甘いです。',             hira: 'くだものがあまいです。',               romaji: 'KUDAMONOGAAMAIDESU.' },
+  { kanji: '昼ごはんを食べましょう。',     hira: 'ひるごはんをたべましょう。',           romaji: 'HIRUGOHANWOTABEMASYOU.' },
+  // 学校・仕事
+  { kanji: '授業が始まります。',           hira: 'じゅぎょうがはじまります。',           romaji: 'ZYUGYOUGAHAZIMARIMASU.' },
+  { kanji: '宿題をします。',               hira: 'しゅくだいをします。',                 romaji: 'SYUKUDAIWOSIMASU.' },
+  { kanji: '試験を受けます。',             hira: 'しけんをうけます。',                   romaji: 'SIKENWOUKEMASU.' },
+  { kanji: '会議に出席します。',           hira: 'かいぎにしゅっせきします。',           romaji: 'KAIGINISYUSSEKISIMASU.' },
+  { kanji: '図書館で勉強します。',         hira: 'としょかんでべんきょうします。',       romaji: 'TOSYOKANDEBENKYOUSIMASU.' },
+  { kanji: '先生に質問します。',           hira: 'せんせいにしつもんします。',           romaji: 'SENSEINISITUMONSIMASU.' },
+  { kanji: '成績が上がりました。',         hira: 'せいせきがあがりました。',             romaji: 'SEISEKIGAAGARIMASITA.' },
+  { kanji: '仕事が忙しいです。',           hira: 'しごとがいそがしいです。',             romaji: 'SIGOTOGAISOGASIIDESU.' },
+  { kanji: '残業が多いです。',             hira: 'ざんぎょうがおおいです。',             romaji: 'ZANGYOUGAOOIDESU.' },
+  { kanji: '会社に遅刻しました。',         hira: 'かいしゃにちこくしました。',           romaji: 'KAISYANITIKOKUSIMASITA.' },
+  // 天気・自然
+  { kanji: '今日は雨が降ります。',         hira: 'きょうはあめがふります。',             romaji: 'KYOUHAAMEGAHURIMASU.' },
+  { kanji: '風が強いです。',               hira: 'かぜがつよいです。',                   romaji: 'KAZEGATUYOIDESU.' },
+  { kanji: '桜が満開です。',               hira: 'さくらがまんかいです。',               romaji: 'SAKURAGAMANKAIDESU.' },
+  { kanji: '雪が降っています。',           hira: 'ゆきがふっています。',                 romaji: 'YUKIGAHUTTEIMASU.' },
+  { kanji: '海が見えます。',               hira: 'うみがみえます。',                     romaji: 'UMIGAMIEMASU.' },
+  { kanji: '山に登ります。',               hira: 'やまにのぼります。',                   romaji: 'YAMANINOBORIMASU.' },
+  { kanji: '星がきれいです。',             hira: 'ほしがきれいです。',                   romaji: 'HOSIGAKIREIDESU.' },
+  { kanji: '川で魚を釣ります。',           hira: 'かわでさかなをつります。',             romaji: 'KAWADESAKANAWOTURIMASU.' },
+  { kanji: '春は暖かいです。',             hira: 'はるはあたたかいです。',               romaji: 'HARUHAATATAKAIDESU.' },
+  { kanji: '夏は暑いです。',               hira: 'なつはあついです。',                   romaji: 'NATUHAATUIDESU.' },
+  // 交通・移動
+  { kanji: '電車に乗ります。',             hira: 'でんしゃにのります。',                 romaji: 'DENSYANINORIMASU.' },
+  { kanji: '自転車に乗ります。',           hira: 'じてんしゃにのります。',               romaji: 'ZITENSYANINORIMASU.' },
+  { kanji: '駅まで歩きます。',             hira: 'えきまであるきます。',                 romaji: 'EKIMADEARUKIMASU.' },
+  { kanji: '信号で止まります。',           hira: 'しんごうでとまります。',               romaji: 'SINGOUDETOMARIMASU.' },
+  { kanji: '右に曲がります。',             hira: 'みぎにまがります。',                   romaji: 'MIGINIMAGARIMASU.' },
+  { kanji: '遠くまで歩きました。',         hira: 'とおくまであるきました。',             romaji: 'TOOKUMADEARUKIMASITA.' },
+  { kanji: '左に曲がってください。',       hira: 'ひだりにまがってください。',           romaji: 'HIDARINIMAGATTEKUDASAI.' },
+  { kanji: '道に迷いました。',             hira: 'みちにまよいました。',                 romaji: 'MITINIMAYOIMASITA.' },
+  { kanji: '橋を渡ります。',               hira: 'はしをわたります。',                   romaji: 'HASIWOWATARIMASU.' },
+  { kanji: '近道を行きます。',             hira: 'ちかみちをいきます。',                 romaji: 'TIKAMITIWOIKIMASU.' },
+  // 趣味
+  { kanji: '絵を描きます。',               hira: 'えをかきます。',                       romaji: 'EWOKAKIMASU.' },
+  { kanji: '料理が得意です。',             hira: 'りょうりがとくいです。',               romaji: 'RYOURIGATOKUIDESU.' },
+  { kanji: '庭に花を植えます。',           hira: 'にわにはなをうえます。',               romaji: 'NIWANIHANAWOUEMASU.' },
+  { kanji: '写真を撮ります。',             hira: 'しゃしんをとります。',                 romaji: 'SYASINWOTORIMASU.' },
+  { kanji: '歌を歌います。',               hira: 'うたをうたいます。',                   romaji: 'UTAWOUTAIMASU.' },
+  { kanji: '山に登るのが好きです。',       hira: 'やまにのぼるのがすきです。',           romaji: 'YAMANINOBORUNOGASUKIDESU.' },
+  { kanji: '水泳が得意です。',             hira: 'すいえいがとくいです。',               romaji: 'SUIEIGATOKUIDESU.' },
+  { kanji: '絵本を読みます。',             hira: 'えほんをよみます。',                   romaji: 'EHONWOYOMIMASU.' },
+  { kanji: '日記を書きます。',             hira: 'にっきをかきます。',                   romaji: 'NIKKIWOKAKIMASU.' },
+  { kanji: '将棋が強いです。',             hira: 'しょうぎがつよいです。',               romaji: 'SYOUGIGATUYOIDESU.' },
+  // 買い物
+  { kanji: '買い物に行きます。',           hira: 'かいものにいきます。',                 romaji: 'KAIMONONIIKIMASU.' },
+  { kanji: '値段を確認します。',           hira: 'ねだんをかくにんします。',             romaji: 'NEDANWOKAKUNINSIMASU.' },
+  { kanji: '財布を忘れました。',           hira: 'さいふをわすれました。',               romaji: 'SAIHUWOWASUREMASITA.' },
+  { kanji: '安いものを買います。',         hira: 'やすいものをかいます。',               romaji: 'YASUIMONOWOKAIMASU.' },
+  { kanji: '領収書をもらいます。',         hira: 'りょうしゅうしょをもらいます。',       romaji: 'RYOUSYUUSYOWOMORAIMASU.' },
+  { kanji: '売り場を探します。',           hira: 'うりばをさがします。',                 romaji: 'URIBAWOSAGASIMASU.' },
+  { kanji: '試着してみます。',             hira: 'しちゃくしてみます。',                 romaji: 'SITYAKUSITEMIMASU.' },
+  { kanji: 'お釣りをもらいます。',         hira: 'おつりをもらいます。',                 romaji: 'OTURIWOMORAIMASU.' },
+  { kanji: '現金で払います。',             hira: 'げんきんではらいます。',               romaji: 'GENKINDEHARAIMASU.' },
+  { kanji: '荷物を持ちます。',             hira: 'にもつをもちます。',                   romaji: 'NIMOTUWOMOTIMASU.' },
+  // 健康
+  { kanji: '薬を飲みます。',               hira: 'くすりをのみます。',                   romaji: 'KUSURIWONOMIMASU.' },
+  { kanji: '頭が痛いです。',               hira: 'あたまがいたいです。',                 romaji: 'ATAMAGAITAIDESU.' },
+  { kanji: '熱が出ました。',               hira: 'ねつがでました。',                     romaji: 'NETUGADEMASITA.' },
+  { kanji: 'お腹が空きました。',           hira: 'おなかがすきました。',                 romaji: 'ONAKAGASUKIMASITA.' },
+  { kanji: 'よく眠れました。',             hira: 'よくねむれました。',                   romaji: 'YOKUNEMUREMASITA.' },
+  { kanji: '体重が増えました。',           hira: 'たいじゅうがふえました。',             romaji: 'TAIZYUUGAHUEMASITA.' },
+  { kanji: '運動が足りません。',           hira: 'うんどうがたりません。',               romaji: 'UNDOUGATARIMASENN.' },
+  { kanji: '風邪を引きました。',           hira: 'かぜをひきました。',                   romaji: 'KAZEWOHIKIMASITA.' },
+  { kanji: '傷に薬を塗ります。',           hira: 'きずにくすりをぬります。',             romaji: 'KIZUNIKUSURIWONURIMASU.' },
+  { kanji: '早く元気になります。',         hira: 'はやくげんきになります。',             romaji: 'HAYAKUGENKININARIMASU.' },
+  // 旅行
+  { kanji: '旅行が好きです。',             hira: 'りょこうがすきです。',                 romaji: 'RYOKOUGASUKIDESU.' },
+  { kanji: '地図を見ます。',               hira: 'ちずをみます。',                       romaji: 'TIZUWOMIMASU.' },
+  { kanji: '土産を買います。',             hira: 'おみやげをかいます。',                 romaji: 'OMIYAGEWOKAIMASU.' },
+  { kanji: '観光地を回ります。',           hira: 'かんこうちをめぐります。',             romaji: 'KANKOUTIWOMEGURIMASU.' },
+  { kanji: '海外に行きたいです。',         hira: 'かいがいにいきたいです。',             romaji: 'KAIGAINIIKITAIDESU.' },
+  { kanji: '外国語を話します。',           hira: 'がいこくごをはなします。',             romaji: 'GAIKOKUGOWOHANASIMASU.' },
+  { kanji: '地元の料理を食べます。',       hira: 'じもとのりょうりをたべます。',         romaji: 'JIMOTONORYOURIWOTABEMASU.' },
+  { kanji: '道を調べます。',               hira: 'みちをしらべます。',                   romaji: 'MITIWOSIRABEMASU.' },
+  { kanji: '自然を楽しみます。',           hira: 'しぜんをたのしみます。',               romaji: 'SIZENWOTANOSIMIMASU.' },
+  { kanji: '良い思い出を作ります。',       hira: 'よいおもいでをつくります。',           romaji: 'YOIOMOIDEWOTUKURIMASU.' },
+  // その他
+  { kanji: '今日は良い天気ですね。',       hira: 'きょうはよいてんきですね。',           romaji: 'KYOUHAYOITENKIDESUNE.' },
+  { kanji: '喫茶店で待ち合わせをした。',   hira: 'きっさてんでまちあわせをした。',       romaji: 'KISSATENDEMATIAWASEWOSITA.' },
+  { kanji: '学校に行きます。',             hira: 'がっこうにいきます。',                 romaji: 'GAKKOUNIIKIMASU.' },
+  { kanji: '友達と映画を見ました。',       hira: 'ともだちとえいがをみました。',         romaji: 'TOMODATITOEIGAWOMIMASITA.' },
+  { kanji: '毎日少しずつ練習しよう。',     hira: 'まいにちすこしずつれんしゅうしよう。', romaji: 'MAINITISUKOSIZUTURENSYUUSIYOU.' },
+];
+
+// ── KEYBOARD LAYOUT ───────────────────────────────────
+// Each entry: [label, finger, extraClass?]
+const ROWS = [
+  [
+    ['1','lp'],['2','lr'],['3','lm'],['4','li'],['5','li'],
+    ['6','ri'],['7','ri'],['8','rm'],['9','rr'],['0','rp'],
+    ['-','rp'],['^','rp'],['¥','rp'],['BS','rp','key-w15']
+  ],
+  [
+    ['Q','lp'],['W','lr'],['E','lm'],['R','li'],['T','li'],
+    ['Y','ri'],['U','ri'],['I','rm'],['O','rr'],['P','rp'],
+    ['@','rp'],['[','rp']
+  ],
+  [
+    ['A','lp'],['S','lr'],['D','lm'],['F','li'],['G','li'],
+    ['H','ri'],['J','ri'],['K','rm'],['L','rr'],[';','rp'],
+    [':','rp'],[']','rp']
+  ],
+  [
+    ['Z','lp'],['X','lr'],['C','lm'],['V','li'],['B','li'],
+    ['N','ri'],['M','ri'],[',','rm'],['.','rr'],['/','rp']
+  ],
+  [
+    ['SPACE','th','key-sp']
+  ]
+];
+
+const HOME_KEYS = new Set(['A','S','D','F','J','K','L',';']);
+
+// Maps key label → finger
+const KEY_FINGER = {};
+ROWS.flat().forEach(([lbl, f]) => { KEY_FINGER[lbl] = f; });
+
+const FINGER_COLOR = {
+  lp:'#4472C4', lr:'#70AD47', lm:'#FFC000', li:'#E74C3C',
+  ri:'#E74C3C', rm:'#FFC000', rr:'#70AD47', rp:'#4472C4',
+  th:'#8e44ad', none:'#aaa'
+};
+
+const FINGER_LABEL = {
+  lp:'左小指', lr:'左薬指', lm:'左中指', li:'左人差し指',
+  ri:'右人差し指', rm:'右中指', rr:'右薬指', rp:'右小指',
+  th:'親指', none:'—'
+};
+
+// ── STATE ─────────────────────────────────────────────
+let timeLeft, charCount, mistakes, keystrokes, sentencesDone;
+let sentIdx, pos, timerID, running;
+let pool = [];
+
+// ── KEYBOARD BUILD ────────────────────────────────────
+function buildKeyboard() {
+  const kb = document.getElementById('keyboard');
+  kb.innerHTML = '';
+  ROWS.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'key-row';
+    row.forEach(([lbl, finger, extra]) => {
+      const k = document.createElement('div');
+      k.className = `key` + (extra ? ` ${extra}` : '');
+      k.id = `key-${lbl}`;
+      if (HOME_KEYS.has(lbl)) k.classList.add('home-pos');
+      k.textContent = lbl === 'SPACE' ? '' : lbl;
+      rowEl.appendChild(k);
+    });
+    kb.appendChild(rowEl);
+  });
+}
+
+// ── FINGER GUIDE BUILD ────────────────────────────────
+function buildFingerGuide() {
+  const guide = document.getElementById('fingerGuide');
+
+  const mkFinger = (id, name) => `
+    <div class="fng-col fng-${id}">
+      <div class="fng-bar" id="fng-${id}"></div>
+      <div class="fng-name">${name}</div>
+    </div>`;
+
+  const leftFingers = [
+    mkFinger('lp','小指'),
+    mkFinger('lr','薬指'),
+    mkFinger('lm','中指'),
+    mkFinger('li','人差し指'),
+  ].join('');
+
+  const rightFingers = [
+    mkFinger('ri','人差し指'),
+    mkFinger('rm','中指'),
+    mkFinger('rr','薬指'),
+    mkFinger('rp','小指'),
+  ].join('');
+
+  guide.innerHTML = `
+    <div class="hand-section">
+      <div class="hand-fingers">${leftFingers}</div>
+      <div class="hand-label">左手</div>
+    </div>
+    <div class="center-info">
+      <div class="ci-label">次に押すキー</div>
+      <div class="ci-key f-none" id="ciKey">—</div>
+      <div class="ci-finger" id="ciFinger">—</div>
+    </div>
+    <div class="hand-section">
+      <div class="hand-fingers">${rightFingers}</div>
+      <div class="hand-label">右手</div>
+    </div>`;
+}
+
+// ── GAME LOGIC ────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startGame() {
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('resultScreen').classList.add('hidden');
+
+  timeLeft = TOTAL_SEC;
+  charCount = 0;
+  mistakes = 0;
+  keystrokes = 0;
+  sentencesDone = 0;
+  sentIdx = 0;
+  pos = 0;
+  running = true;
+
+  pool = shuffle([...SENTENCES]);
+
+  document.getElementById('charCount').textContent = '0';
+  updateTimerDisplay();
+  loadSentence();
+  updateUI();
+
+  clearInterval(timerID);
+  timerID = setInterval(tick, 1000);
+}
+
+function endGame() {
+  clearInterval(timerID);
+  running = false;
+  clearHighlights();
+
+  document.getElementById('rChars').textContent = charCount;
+  document.getElementById('rSentences').textContent = sentencesDone;
+  document.getElementById('rMistakes').textContent = mistakes;
+  const acc = keystrokes > 0
+    ? Math.round((charCount / keystrokes) * 100) + '%'
+    : '—';
+  document.getElementById('rAccuracy').textContent = acc;
+  document.getElementById('resultScreen').classList.remove('hidden');
+}
+
+function tick() {
+  timeLeft--;
+  updateTimerDisplay();
+  if (timeLeft <= 0) endGame();
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  document.getElementById('timerText').textContent =
+    `${m}分 ${String(s).padStart(2, '0')}秒`;
+
+  const pct = (timeLeft / TOTAL_SEC) * 100;
+  const bar = document.getElementById('timerBar');
+  bar.style.width = pct + '%';
+  bar.className = 'timer-bar-fill' +
+    (pct < 20 ? ' danger' : pct < 40 ? ' warn' : '');
+}
+
+function loadSentence() {
+  if (sentIdx >= pool.length) {
+    pool = shuffle([...SENTENCES]);
+    sentIdx = 0;
+  }
+  pos = 0;
+}
+
+function currentSentence() { return pool[sentIdx] || pool[0]; }
+
+function updateUI() {
+  const s = currentSentence();
+  document.getElementById('kanjiText').textContent = s.kanji;
+  document.getElementById('hiraText').textContent = s.hira;
+  renderRomaji(s.romaji, pos, false);
+  updateKeyHighlight(s.romaji, pos);
+}
+
+function renderRomaji(romaji, curPos, isError) {
+  const done = romaji.slice(0, curPos);
+  const cur  = romaji[curPos] ?? '';
+  const todo = romaji.slice(curPos + 1);
+
+  document.getElementById('romajiText').innerHTML =
+    `<span class="r-done">${done}</span>` +
+    (cur ? `<span class="r-cursor${isError ? ' wrong' : ''}">${cur}</span>` : '') +
+    `<span class="r-todo">${todo}</span>`;
+}
+
+function updateKeyHighlight(romaji, curPos) {
+  clearHighlights();
+  const ch = romaji[curPos];
+  if (!ch) { redrawHands(null, null); return; }
+
+  const keyId = ch === ' ' ? 'SPACE' : ch;
+  const keyEl = document.getElementById(`key-${keyId}`);
+  if (keyEl) keyEl.classList.add('next-key');
+
+  const finger = KEY_FINGER[keyId] || 'none';
+  updateFingerInfo(ch, finger);
+  redrawHands(finger, keyId);
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.next-key').forEach(el => el.classList.remove('next-key'));
+  document.querySelectorAll('.fng-bar.active').forEach(el => el.classList.remove('active'));
+}
+
+function updateFingerInfo(ch, finger) {
+  const ciKey = document.getElementById('ciKey');
+  const ciFinger = document.getElementById('ciFinger');
+
+  ciKey.textContent = ch === ' ' ? '␣' : ch;
+  ciFinger.textContent = FINGER_LABEL[finger] || '—';
+
+  const fngEl = document.getElementById(`fng-${finger}`);
+  if (fngEl) fngEl.classList.add('active');
+}
+
+// ── INPUT ─────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (!running) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key.length > 1 && e.key !== 'Enter') return; // ignore F-keys, etc.
+
+  const typed = e.key === ' ' ? ' ' : e.key.toUpperCase();
+  const s = currentSentence();
+  const expected = s.romaji[pos];
+
+  if (!expected) return;
+
+  keystrokes++;
+
+  if (typed === expected) {
+    // Correct
+    animKey(typed === ' ' ? 'SPACE' : typed, true);
+    pos++;
+    charCount++;
+    document.getElementById('charCount').textContent = charCount;
+
+    if (pos >= s.romaji.length) {
+      // Sentence complete
+      sentencesDone++;
+      sentIdx++;
+      loadSentence();
+      flashSentence(true);
+    }
+    updateUI();
+  } else {
+    // Wrong
+    mistakes++;
+    animKey(typed === ' ' ? 'SPACE' : typed, false);
+    flashSentence(false);
+    renderRomaji(s.romaji, pos, true);
+    setTimeout(() => renderRomaji(s.romaji, pos, false), 300);
+  }
+});
+
+function animKey(keyId, correct) {
+  const el = document.getElementById(`key-${keyId}`);
+  if (!el) return;
+  el.classList.add('pressed');
+  setTimeout(() => el.classList.remove('pressed'), 130);
+}
+
+function flashSentence(ok) {
+  const box = document.getElementById('sentenceBox');
+  const cls = ok ? 'ok-flash' : 'error-flash';
+  box.classList.remove('ok-flash', 'error-flash');
+  void box.offsetWidth; // reflow
+  box.classList.add(cls);
+  setTimeout(() => box.classList.remove(cls), 350);
+}
+
+// ── HAND OVERLAY ──────────────────────────────────────
+const FINGER_HOME = { lp:'A', lr:'S', lm:'D', li:'F', ri:'J', rm:'K', rr:'L', rp:';' };
+const LEFT_SET = new Set(['lp','lr','lm','li']);
+
+function getKbCenter(keyId) {
+  const kbWrap = document.getElementById('keyboard');
+  const el = document.getElementById(`key-${keyId}`);
+  if (!el || !kbWrap) return null;
+  const kr = kbWrap.getBoundingClientRect();
+  const er = el.getBoundingClientRect();
+  return { x: er.left - kr.left + er.width/2, y: er.top - kr.top + er.height/2 };
+}
+
+function buildHandOverlay() {
+  const kbWrap = document.getElementById('keyboard');
+  if (!kbWrap) return;
+  const old = document.getElementById('handOverlay');
+  if (old) old.remove();
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.id = 'handOverlay';
+  svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;pointer-events:none;overflow:visible;z-index:10;';
+  svg.setAttribute('height', kbWrap.offsetHeight + 55);
+  kbWrap.appendChild(svg);
+  redrawHands(null, null);
+}
+
+function redrawHands(activeFinger, targetKeyId) {
+  const svg = document.getElementById('handOverlay');
+  if (!svg) return;
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const kbWrap = document.getElementById('keyboard');
+  if (!kbWrap) return;
+
+  const kbH = kbWrap.offsetHeight;
+  const palmY = kbH + 36;
+
+  // Average x of each hand's home keys for palm center
+  const avgX = keys => {
+    const xs = keys.map(k => getKbCenter(k)?.x).filter(Boolean);
+    return xs.length ? xs.reduce((a,b) => a+b, 0) / xs.length : null;
+  };
+  const leftPalmX  = avgX(['A','S','D','F']);
+  const rightPalmX = avgX(['J','K','L',';']);
+  if (!leftPalmX || !rightPalmX) return;
+
+  const SKIN     = 'rgba(215,160,90,0.38)';
+  const SKIN_STR = 'rgba(175,115,45,0.55)';
+  const RED      = 'rgba(205,45,45,0.75)';
+  const RED_STR  = 'rgba(150,18,18,0.90)';
+
+  const mk = tag => document.createElementNS(ns, tag);
+
+  const ellipse = (cx, cy, rx, ry, fill, str) => {
+    const e = mk('ellipse');
+    e.setAttribute('cx', cx); e.setAttribute('cy', cy);
+    e.setAttribute('rx', rx); e.setAttribute('ry', ry);
+    e.setAttribute('fill', fill); e.setAttribute('stroke', str);
+    e.setAttribute('stroke-width', '2');
+    svg.appendChild(e);
+  };
+
+  const tube = (px, py, tx, ty, fw, fill, str) => {
+    const dx = tx-px, dy = ty-py;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    if (len < 2) return;
+    const ex = -dy/len, ey = dx/len;  // perpendicular unit vector
+    const hw = fw/2;
+    // control point curves the finger outward slightly
+    const cpx = (px+tx)/2 + ex*(fw*0.55);
+    const cpy = (py+ty)/2 + ey*(fw*0.55);
+    const d = [
+      `M ${px+ex*hw} ${py+ey*hw}`,
+      `Q ${cpx+ex*hw} ${cpy+ey*hw} ${tx+ex*hw} ${ty+ey*hw}`,
+      `A ${hw} ${hw} 0 0 1 ${tx-ex*hw} ${ty-ey*hw}`,
+      `Q ${cpx-ex*hw} ${cpy-ey*hw} ${px-ex*hw} ${py-ey*hw}`,
+      `Z`
+    ].join(' ');
+    const p = mk('path');
+    p.setAttribute('d', d); p.setAttribute('fill', fill);
+    p.setAttribute('stroke', str); p.setAttribute('stroke-width', '2');
+    svg.appendChild(p);
+  };
+
+  // Palms
+  ellipse(leftPalmX,  palmY, 60, 38, SKIN, SKIN_STR);
+  ellipse(rightPalmX, palmY, 60, 38, SKIN, SKIN_STR);
+
+  // Inactive fingers (draw first = behind)
+  Object.entries(FINGER_HOME).forEach(([fid, homeKey]) => {
+    if (fid === activeFinger) return;
+    const pos = getKbCenter(homeKey);
+    if (!pos) return;
+    const palmX = LEFT_SET.has(fid) ? leftPalmX : rightPalmX;
+    tube(palmX, palmY - 38, pos.x, pos.y, 13, SKIN, SKIN_STR);
+  });
+
+  // Active finger (draw last = on top)
+  if (activeFinger && FINGER_HOME[activeFinger]) {
+    const homePos = getKbCenter(FINGER_HOME[activeFinger]);
+    const tPos    = targetKeyId ? getKbCenter(targetKeyId) : homePos;
+    const palmX   = LEFT_SET.has(activeFinger) ? leftPalmX : rightPalmX;
+    if (tPos) {
+      // Dashed reach line when finger leaves home key
+      if (homePos && targetKeyId && targetKeyId !== FINGER_HOME[activeFinger]) {
+        const ln = mk('line');
+        ln.setAttribute('x1', homePos.x); ln.setAttribute('y1', homePos.y);
+        ln.setAttribute('x2', tPos.x);    ln.setAttribute('y2', tPos.y);
+        ln.setAttribute('stroke', 'rgba(200,40,40,0.35)');
+        ln.setAttribute('stroke-width', '2');
+        ln.setAttribute('stroke-dasharray', '5,4');
+        svg.appendChild(ln);
+      }
+      tube(palmX, palmY - 38, tPos.x, tPos.y, 16, RED, RED_STR);
+    }
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────
+buildKeyboard();
+buildFingerGuide();
+requestAnimationFrame(buildHandOverlay);
+</script>
+</body>
+</html>
