@@ -31,21 +31,8 @@ header {
 .hdr-title { font-size: 18px; font-weight: bold; }
 .hdr-sub { font-size: 13px; opacity: 0.8; }
 .hdr-right { display: flex; align-items: center; gap: 12px; }
-.timer-label { font-size: 13px; }
-.timer-bar-bg {
-  width: 180px; height: 14px;
-  background: rgba(255,255,255,0.25);
-  border-radius: 7px; overflow: hidden;
-}
-.timer-bar-fill {
-  height: 100%; width: 100%;
-  background: linear-gradient(90deg, #4caf50, #8bc34a);
-  border-radius: 7px;
-  transition: width 1s linear;
-}
-.timer-bar-fill.warn { background: linear-gradient(90deg, #ff9800, #ffc107); }
-.timer-bar-fill.danger { background: linear-gradient(90deg, #f44336, #ff5722); }
-.timer-text { font-size: 16px; font-weight: bold; min-width: 90px; text-align: right; }
+.elapsed-label { font-size: 13px; }
+.elapsed-text { font-size: 16px; font-weight: bold; min-width: 90px; text-align: right; }
 .btn-end {
   background: #e74c3c; color: white; border: none;
   border-radius: 20px; padding: 6px 18px;
@@ -258,11 +245,8 @@ header {
     <span class="hdr-sub">日本語入力</span>
   </div>
   <div class="hdr-right">
-    <span class="timer-label">残り時間</span>
-    <div class="timer-bar-bg">
-      <div class="timer-bar-fill" id="timerBar"></div>
-    </div>
-    <div class="timer-text" id="timerText">5分 00秒</div>
+    <span class="elapsed-label">経過時間</span>
+    <div class="elapsed-text" id="elapsedText">0分 00秒</div>
     <button class="btn-end" onclick="endGame()">✕ 終了</button>
   </div>
 </header>
@@ -328,6 +312,10 @@ header {
         <div class="stat-label">正確率</div>
         <div class="stat-val" id="rAccuracy">—</div>
       </div>
+      <div class="stat-card" style="grid-column:1/-1">
+        <div class="stat-label">経過時間</div>
+        <div class="stat-val" id="rTime">—</div>
+      </div>
     </div>
     <button class="btn-primary btn-green" onclick="startGame()">もう一度</button>
   </div>
@@ -335,125 +323,119 @@ header {
 
 <script>
 // ── DATA ──────────────────────────────────────────────
-const TOTAL_SEC = 300;
 
 // Romaji uses standard JIS romaji input rules
 const SENTENCES = [
   // 日常生活
-  { kanji: '毎朝早く起きます。',           hira: 'まいあさはやくおきます。',             romaji: 'MAIASAHAYAKUOKIMASU.' },
-  { kanji: '夜遅く寝ます。',               hira: 'よるおそくねます。',                   romaji: 'YORUOSOKUNEMASU.' },
-  { kanji: '朝ごはんを食べました。',       hira: 'あさごはんをたべました。',             romaji: 'ASAGOHANWOTABEMASITA.' },
-  { kanji: '水をたくさん飲みます。',       hira: 'みずをたくさんのみます。',             romaji: 'MIZUWOTAKUSANNOMIMASU.' },
-  { kanji: '手をきれいに洗います。',       hira: 'てをきれいにあらいます。',             romaji: 'TEWOKIREINIARAIMASU.' },
-  { kanji: '歯を磨きます。',               hira: 'はをみがきます。',                     romaji: 'HAWOMIGAKIMASU.' },
-  { kanji: 'お風呂に入ります。',           hira: 'おふろにはいります。',                 romaji: 'OHURONIHAIRIMASU.' },
-  { kanji: '電気を消します。',             hira: 'でんきをけします。',                   romaji: 'DENKIWOKESIMASU.' },
-  { kanji: '窓を開けます。',               hira: 'まどをあけます。',                     romaji: 'MADOWOAKEMASU.' },
+  { kanji: '毎朝歯を磨きます。',           hira: 'まいあさはをみがきます。',             romaji: 'MAIASAHAWOMIGAKIMASU.' },
+  { kanji: '夜は早く寝ます。',             hira: 'よるははやくねます。',                 romaji: 'YORUHAHAYAKUNEMASU.' },
+  { kanji: '手をよく洗います。',           hira: 'てをよくあらいます。',                 romaji: 'TEWOYOKUARAIMASU.' },
   { kanji: '部屋を掃除します。',           hira: 'へやをそうじします。',                 romaji: 'HEYAWOSOUZISIMASU.' },
+  { kanji: '窓を開けます。',               hira: 'まどをあけます。',                     romaji: 'MADOWOAKEMASU.' },
+  { kanji: '電気を消します。',             hira: 'でんきをけします。',                   romaji: 'DENKIWOKESIMASU.' },
   { kanji: '鍵をかけます。',               hira: 'かぎをかけます。',                     romaji: 'KAGIWOKAKEMASU.' },
-  { kanji: '新聞を読みます。',             hira: 'しんぶんをよみます。',                 romaji: 'SINBUNWOYOMIMASU.' },
-  { kanji: '音楽を聴きます。',             hira: 'おんがくをききます。',                 romaji: 'ONGAKUWOKIKIMASU.' },
-  { kanji: '映画を見ます。',               hira: 'えいがをみます。',                     romaji: 'EIGAWOMIMASU.' },
-  { kanji: '友達と話します。',             hira: 'ともだちとはなします。',               romaji: 'TOMODATITOHANASIMASU.' },
-  { kanji: '電話をかけます。',             hira: 'でんわをかけます。',                   romaji: 'DENWAWOKAKEMASU.' },
-  { kanji: '手紙を書きます。',             hira: 'てがみをかきます。',                   romaji: 'TEGAMIWOKAKIMASU.' },
+  { kanji: 'お風呂に入ります。',           hira: 'おふろにはいります。',                 romaji: 'OHURONIHAIRIMASU.' },
   { kanji: '料理を作ります。',             hira: 'りょうりをつくります。',               romaji: 'RYOURIWOTUKURIMASU.' },
-  { kanji: '犬と散歩します。',             hira: 'いぬとさんぽします。',                 romaji: 'INUTOSANPOSIMASU.' },
-  { kanji: '本を読むのが好きです。',       hira: 'ほんをよむのがすきです。',             romaji: 'HONWOYOMUNOGASUKIDESU.' },
+  { kanji: '日記を書きます。',             hira: 'にっきをかきます。',                   romaji: 'NIKKIWOKAKIMASU.' },
   // 食べ物
-  { kanji: 'りんごを食べます。',           hira: 'りんごをたべます。',                   romaji: 'RINGOWOTABEMASU.' },
-  { kanji: 'ご飯を炊きます。',             hira: 'ごはんをたきます。',                   romaji: 'GOHANWOTAKIMASU.' },
-  { kanji: '野菜が好きです。',             hira: 'やさいがすきです。',                   romaji: 'YASAIGASUKIDESU.' },
-  { kanji: '魚を焼きます。',               hira: 'さかなをやきます。',                   romaji: 'SAKANAWOYAKIMASU.' },
+  { kanji: '野菜を洗います。',             hira: 'やさいをあらいます。',                 romaji: 'YASAIWOARAIMASU.' },
   { kanji: '卵を割ります。',               hira: 'たまごをわります。',                   romaji: 'TAMAGOWOWARIMASU.' },
   { kanji: 'みそ汁を作ります。',           hira: 'みそしるをつくります。',               romaji: 'MISOSIRUWOTUKURIMASU.' },
+  { kanji: '牛乳を飲みます。',             hira: 'ぎゅうにゅうをのみます。',             romaji: 'GYUUNYUUWONOMIMASU.' },
+  { kanji: '果物が好きです。',             hira: 'くだものがすきです。',                 romaji: 'KUDAMONOGASUKIDESU.' },
+  { kanji: '魚を焼きます。',               hira: 'さかなをやきます。',                   romaji: 'SAKANAWOYAKIMASU.' },
+  { kanji: 'パンを焼きます。',             hira: 'ぱんをやきます。',                     romaji: 'PANWOYAKIMASU.' },
+  { kanji: 'ご飯を炊きます。',             hira: 'ごはんをたきます。',                   romaji: 'GOHANWOTAKIMASU.' },
   { kanji: 'お茶を入れます。',             hira: 'おちゃをいれます。',                   romaji: 'OTYAWOIREMASU.' },
-  { kanji: '塩を入れます。',               hira: 'しおをいれます。',                     romaji: 'SIOWOIREMASU.' },
-  { kanji: '果物が甘いです。',             hira: 'くだものがあまいです。',               romaji: 'KUDAMONOGAAMAIDESU.' },
-  { kanji: '昼ごはんを食べましょう。',     hira: 'ひるごはんをたべましょう。',           romaji: 'HIRUGOHANWOTABEMASYOU.' },
+  { kanji: '塩と砂糖を混ぜます。',         hira: 'しおとさとうをまぜます。',             romaji: 'SIOTOSATOUWOMAZEMASU.' },
   // 学校・仕事
   { kanji: '授業が始まります。',           hira: 'じゅぎょうがはじまります。',           romaji: 'ZYUGYOUGAHAZIMARIMASU.' },
   { kanji: '宿題をします。',               hira: 'しゅくだいをします。',                 romaji: 'SYUKUDAIWOSIMASU.' },
   { kanji: '試験を受けます。',             hira: 'しけんをうけます。',                   romaji: 'SIKENWOUKEMASU.' },
   { kanji: '会議に出席します。',           hira: 'かいぎにしゅっせきします。',           romaji: 'KAIGINISYUSSEKISIMASU.' },
-  { kanji: '図書館で勉強します。',         hira: 'としょかんでべんきょうします。',       romaji: 'TOSYOKANDEBENKYOUSIMASU.' },
+  { kanji: '図書館で本を読みます。',       hira: 'としょかんでほんをよみます。',         romaji: 'TOSYOKANDEHONWOYOMIMASU.' },
   { kanji: '先生に質問します。',           hira: 'せんせいにしつもんします。',           romaji: 'SENSEINISITUMONSIMASU.' },
-  { kanji: '成績が上がりました。',         hira: 'せいせきがあがりました。',             romaji: 'SEISEKIGAAGARIMASITA.' },
+  { kanji: '成績が良くなりました。',       hira: 'せいせきがよくなりました。',           romaji: 'SEISEKIGAYOKUNARIMASITA.' },
   { kanji: '仕事が忙しいです。',           hira: 'しごとがいそがしいです。',             romaji: 'SIGOTOGAISOGASIIDESU.' },
-  { kanji: '残業が多いです。',             hira: 'ざんぎょうがおおいです。',             romaji: 'ZANGYOUGAOOIDESU.' },
-  { kanji: '会社に遅刻しました。',         hira: 'かいしゃにちこくしました。',           romaji: 'KAISYANITIKOKUSIMASITA.' },
+  { kanji: '会社に早く来ました。',         hira: 'かいしゃにはやくきました。',           romaji: 'KAISYANIHAYAKUKIMASITA.' },
+  { kanji: '発表の準備をします。',         hira: 'はっぴょうのじゅんびをします。',       romaji: 'HAPPYOUNOZYUNBIWOSIMASU.' },
   // 天気・自然
-  { kanji: '今日は雨が降ります。',         hira: 'きょうはあめがふります。',             romaji: 'KYOUHAAMEGAHURIMASU.' },
-  { kanji: '風が強いです。',               hira: 'かぜがつよいです。',                   romaji: 'KAZEGATUYOIDESU.' },
-  { kanji: '桜が満開です。',               hira: 'さくらがまんかいです。',               romaji: 'SAKURAGAMANKAIDESU.' },
-  { kanji: '雪が降っています。',           hira: 'ゆきがふっています。',                 romaji: 'YUKIGAHUTTEIMASU.' },
-  { kanji: '海が見えます。',               hira: 'うみがみえます。',                     romaji: 'UMIGAMIEMASU.' },
+  { kanji: '今日は晴れています。',         hira: 'きょうははれています。',               romaji: 'KYOUHAHARETEIMASU.' },
+  { kanji: '風が強く吹いています。',       hira: 'かぜがつよくふいています。',           romaji: 'KAZEGATUYOKUHUITEIMASU.' },
+  { kanji: '雪が深く積もりました。',       hira: 'ゆきがふかくつもりました。',           romaji: 'YUKIGAHUKAKUTUMORIMASITA.' },
+  { kanji: '桜が満開で美しいです。',       hira: 'さくらがまんかいでうつくしいです。',   romaji: 'SAKURAGAMANKAIDEUTUKUSIIDESU.' },
+  { kanji: '川で泳ぎます。',               hira: 'かわでおよぎます。',                   romaji: 'KAWADEOYOGIMASU.' },
   { kanji: '山に登ります。',               hira: 'やまにのぼります。',                   romaji: 'YAMANINOBORIMASU.' },
-  { kanji: '星がきれいです。',             hira: 'ほしがきれいです。',                   romaji: 'HOSIGAKIREIDESU.' },
-  { kanji: '川で魚を釣ります。',           hira: 'かわでさかなをつります。',             romaji: 'KAWADESAKANAWOTURIMASU.' },
-  { kanji: '春は暖かいです。',             hira: 'はるはあたたかいです。',               romaji: 'HARUHAATATAKAIDESU.' },
-  { kanji: '夏は暑いです。',               hira: 'なつはあついです。',                   romaji: 'NATUHAATUIDESU.' },
+  { kanji: '海が青くきれいです。',         hira: 'うみがあおくきれいです。',             romaji: 'UMIGAAOKUKIREIDESU.' },
+  { kanji: '虹が出ました。',               hira: 'にじがでました。',                     romaji: 'NIZIGADEMASITA.' },
+  { kanji: '夕日が沈みます。',             hira: 'ゆうひがしずみます。',                 romaji: 'YUUHIGASIZUMIMASU.' },
+  { kanji: '葉っぱが赤くなりました。',     hira: 'はっぱがあかくなりました。',           romaji: 'HAPPAGAAKAKUNARIMASITA.' },
   // 交通・移動
-  { kanji: '電車に乗ります。',             hira: 'でんしゃにのります。',                 romaji: 'DENSYANINORIMASU.' },
-  { kanji: '自転車に乗ります。',           hira: 'じてんしゃにのります。',               romaji: 'ZITENSYANINORIMASU.' },
-  { kanji: '駅まで歩きます。',             hira: 'えきまであるきます。',                 romaji: 'EKIMADEARUKIMASU.' },
-  { kanji: '信号で止まります。',           hira: 'しんごうでとまります。',               romaji: 'SINGOUDETOMARIMASU.' },
-  { kanji: '右に曲がります。',             hira: 'みぎにまがります。',                   romaji: 'MIGINIMAGARIMASU.' },
-  { kanji: '遠くまで歩きました。',         hira: 'とおくまであるきました。',             romaji: 'TOOKUMADEARUKIMASITA.' },
-  { kanji: '左に曲がってください。',       hira: 'ひだりにまがってください。',           romaji: 'HIDARINIMAGATTEKUDASAI.' },
-  { kanji: '道に迷いました。',             hira: 'みちにまよいました。',                 romaji: 'MITINIMAYOIMASITA.' },
+  { kanji: '電車で駅まで行きます。',       hira: 'でんしゃでえきまでいきます。',         romaji: 'DENSYADEEKIMADEIKIMASU.' },
+  { kanji: 'バスに乗り遅れました。',       hira: 'ばすにのりおくれました。',             romaji: 'BASUNINORIOKUREMASITA.' },
+  { kanji: '右に曲がってください。',       hira: 'みぎにまがってください。',             romaji: 'MIGINIMAGATTEKUDASAI.' },
   { kanji: '橋を渡ります。',               hira: 'はしをわたります。',                   romaji: 'HASIWOWATARIMASU.' },
+  { kanji: '道に迷いました。',             hira: 'みちにまよいました。',                 romaji: 'MITINIMAYOIMASITA.' },
+  { kanji: '地下鉄で移動します。',         hira: 'ちかてつでいどうします。',             romaji: 'TIKATETUDEIDOUSIMASU.' },
+  { kanji: '自転車で通学します。',         hira: 'じてんしゃでつうがくします。',         romaji: 'ZITENSYADETUUGAKUSIMASU.' },
   { kanji: '近道を行きます。',             hira: 'ちかみちをいきます。',                 romaji: 'TIKAMITIWOIKIMASU.' },
+  { kanji: '信号で止まります。',           hira: 'しんごうでとまります。',               romaji: 'SINGOUDETOMARIMASU.' },
+  { kanji: '遠くまで歩きました。',         hira: 'とおくまであるきました。',             romaji: 'TOOKUMADEARUKIMASITA.' },
   // 趣味
   { kanji: '絵を描きます。',               hira: 'えをかきます。',                       romaji: 'EWOKAKIMASU.' },
-  { kanji: '料理が得意です。',             hira: 'りょうりがとくいです。',               romaji: 'RYOURIGATOKUIDESU.' },
-  { kanji: '庭に花を植えます。',           hira: 'にわにはなをうえます。',               romaji: 'NIWANIHANAWOUEMASU.' },
-  { kanji: '写真を撮ります。',             hira: 'しゃしんをとります。',                 romaji: 'SYASINWOTORIMASU.' },
   { kanji: '歌を歌います。',               hira: 'うたをうたいます。',                   romaji: 'UTAWOUTAIMASU.' },
-  { kanji: '山に登るのが好きです。',       hira: 'やまにのぼるのがすきです。',           romaji: 'YAMANINOBORUNOGASUKIDESU.' },
-  { kanji: '水泳が得意です。',             hira: 'すいえいがとくいです。',               romaji: 'SUIEIGATOKUIDESU.' },
-  { kanji: '絵本を読みます。',             hira: 'えほんをよみます。',                   romaji: 'EHONWOYOMIMASU.' },
-  { kanji: '日記を書きます。',             hira: 'にっきをかきます。',                   romaji: 'NIKKIWOKAKIMASU.' },
+  { kanji: '写真を撮ります。',             hira: 'しゃしんをとります。',                 romaji: 'SYASINWOTORIMASU.' },
+  { kanji: 'ギターを弾きます。',           hira: 'ぎたーをひきます。',                   romaji: 'GITAAWOHIKIMASU.' },
   { kanji: '将棋が強いです。',             hira: 'しょうぎがつよいです。',               romaji: 'SYOUGIGATUYOIDESU.' },
+  { kanji: '水泳が好きです。',             hira: 'すいえいがすきです。',                 romaji: 'SUIEIGASUKIDESU.' },
+  { kanji: '庭で花を育てます。',           hira: 'にわではなをそだてます。',             romaji: 'NIWADEHANAWOSODATEMASU.' },
+  { kanji: '映画を見に行きます。',         hira: 'えいがをみにいきます。',               romaji: 'EIGAWOMINIIKIMASU.' },
+  { kanji: '読書が好きです。',             hira: 'どくしょがすきです。',                 romaji: 'DOKUSYOGASUKIDESU.' },
+  { kanji: '料理が得意です。',             hira: 'りょうりがとくいです。',               romaji: 'RYOURIGATOKUIDESU.' },
   // 買い物
   { kanji: '買い物に行きます。',           hira: 'かいものにいきます。',                 romaji: 'KAIMONONIIKIMASU.' },
-  { kanji: '値段を確認します。',           hira: 'ねだんをかくにんします。',             romaji: 'NEDANWOKAKUNINSIMASU.' },
+  { kanji: '安いものを探します。',         hira: 'やすいものをさがします。',             romaji: 'YASUIMONOWOSAGASIMASU.' },
   { kanji: '財布を忘れました。',           hira: 'さいふをわすれました。',               romaji: 'SAIHUWOWASUREMASITA.' },
-  { kanji: '安いものを買います。',         hira: 'やすいものをかいます。',               romaji: 'YASUIMONOWOKAIMASU.' },
+  { kanji: 'お釣りをもらいます。',         hira: 'おつりをもらいます。',                 romaji: 'OTURIWOMORAIMASU.' },
+  { kanji: '値段を確認します。',           hira: 'ねだんをかくにんします。',             romaji: 'NEDANWOKAKUNINSIMASU.' },
+  { kanji: '荷物を持ちます。',             hira: 'にもつをもちます。',                   romaji: 'NIMOTUWOMOTIMASU.' },
   { kanji: '領収書をもらいます。',         hira: 'りょうしゅうしょをもらいます。',       romaji: 'RYOUSYUUSYOWOMORAIMASU.' },
+  { kanji: '現金で払います。',             hira: 'げんきんではらいます。',               romaji: 'GENKINDEHARAIMASU.' },
   { kanji: '売り場を探します。',           hira: 'うりばをさがします。',                 romaji: 'URIBAWOSAGASIMASU.' },
   { kanji: '試着してみます。',             hira: 'しちゃくしてみます。',                 romaji: 'SITYAKUSITEMIMASU.' },
-  { kanji: 'お釣りをもらいます。',         hira: 'おつりをもらいます。',                 romaji: 'OTURIWOMORAIMASU.' },
-  { kanji: '現金で払います。',             hira: 'げんきんではらいます。',               romaji: 'GENKINDEHARAIMASU.' },
-  { kanji: '荷物を持ちます。',             hira: 'にもつをもちます。',                   romaji: 'NIMOTUWOMOTIMASU.' },
   // 健康
   { kanji: '薬を飲みます。',               hira: 'くすりをのみます。',                   romaji: 'KUSURIWONOMIMASU.' },
   { kanji: '頭が痛いです。',               hira: 'あたまがいたいです。',                 romaji: 'ATAMAGAITAIDESU.' },
-  { kanji: '熱が出ました。',               hira: 'ねつがでました。',                     romaji: 'NETUGADEMASITA.' },
-  { kanji: 'お腹が空きました。',           hira: 'おなかがすきました。',                 romaji: 'ONAKAGASUKIMASITA.' },
-  { kanji: 'よく眠れました。',             hira: 'よくねむれました。',                   romaji: 'YOKUNEMUREMASITA.' },
   { kanji: '体重が増えました。',           hira: 'たいじゅうがふえました。',             romaji: 'TAIZYUUGAHUEMASITA.' },
-  { kanji: '運動が足りません。',           hira: 'うんどうがたりません。',               romaji: 'UNDOUGATARIMASENN.' },
-  { kanji: '風邪を引きました。',           hira: 'かぜをひきました。',                   romaji: 'KAZEWOHIKIMASITA.' },
-  { kanji: '傷に薬を塗ります。',           hira: 'きずにくすりをぬります。',             romaji: 'KIZUNIKUSURIWONURIMASU.' },
+  { kanji: '運動が足りません。',           hira: 'うんどうがたりません。',               romaji: 'UNDOUGATARIMASEN.' },
   { kanji: '早く元気になります。',         hira: 'はやくげんきになります。',             romaji: 'HAYAKUGENKININARIMASU.' },
+  { kanji: '風邪を引きました。',           hira: 'かぜをひきました。',                   romaji: 'KAZEWOHIKIMASITA.' },
+  { kanji: 'よく眠れました。',             hira: 'よくねむれました。',                   romaji: 'YOKUNEMUREMASITA.' },
+  { kanji: '傷に薬を塗ります。',           hira: 'きずにくすりをぬります。',             romaji: 'KIZUNIKUSURIWONURIMASU.' },
+  { kanji: 'お腹がすきました。',           hira: 'おなかがすきました。',                 romaji: 'ONAKAGASUKIMASITA.' },
+  { kanji: '熱が出ました。',               hira: 'ねつがでました。',                     romaji: 'NETUGADEMASITA.' },
   // 旅行
-  { kanji: '旅行が好きです。',             hira: 'りょこうがすきです。',                 romaji: 'RYOKOUGASUKIDESU.' },
+  { kanji: '旅行の計画を立てます。',       hira: 'りょこうのけいかくをたてます。',       romaji: 'RYOKOUNOKEIKAKUWOTATEMASU.' },
   { kanji: '地図を見ます。',               hira: 'ちずをみます。',                       romaji: 'TIZUWOMIMASU.' },
-  { kanji: '土産を買います。',             hira: 'おみやげをかいます。',                 romaji: 'OMIYAGEWOKAIMASU.' },
+  { kanji: 'お土産を買います。',           hira: 'おみやげをかいます。',                 romaji: 'OMIYAGEWOKAIMASU.' },
   { kanji: '観光地を回ります。',           hira: 'かんこうちをめぐります。',             romaji: 'KANKOUTIWOMEGURIMASU.' },
-  { kanji: '海外に行きたいです。',         hira: 'かいがいにいきたいです。',             romaji: 'KAIGAINIIKITAIDESU.' },
   { kanji: '外国語を話します。',           hira: 'がいこくごをはなします。',             romaji: 'GAIKOKUGOWOHANASIMASU.' },
-  { kanji: '地元の料理を食べます。',       hira: 'じもとのりょうりをたべます。',         romaji: 'JIMOTONORYOURIWOTABEMASU.' },
+  { kanji: '地元の料理を食べます。',       hira: 'じもとのりょうりをたべます。',         romaji: 'ZIMOTONORYOURIWOTABEMASU.' },
   { kanji: '道を調べます。',               hira: 'みちをしらべます。',                   romaji: 'MITIWOSIRABEMASU.' },
   { kanji: '自然を楽しみます。',           hira: 'しぜんをたのしみます。',               romaji: 'SIZENWOTANOSIMIMASU.' },
   { kanji: '良い思い出を作ります。',       hira: 'よいおもいでをつくります。',           romaji: 'YOIOMOIDEWOTUKURIMASU.' },
+  { kanji: 'ホテルに泊まります。',         hira: 'ほてるにとまります。',                 romaji: 'HOTERUNITOMARIMASU.' },
   // その他
   { kanji: '今日は良い天気ですね。',       hira: 'きょうはよいてんきですね。',           romaji: 'KYOUHAYOITENKIDESUNE.' },
-  { kanji: '喫茶店で待ち合わせをした。',   hira: 'きっさてんでまちあわせをした。',       romaji: 'KISSATENDEMATIAWASEWOSITA.' },
+  { kanji: '友達と遊びます。',             hira: 'ともだちとあそびます。',               romaji: 'TOMODATITOASOBIMASU.' },
   { kanji: '学校に行きます。',             hira: 'がっこうにいきます。',                 romaji: 'GAKKOUNIIKIMASU.' },
-  { kanji: '友達と映画を見ました。',       hira: 'ともだちとえいがをみました。',         romaji: 'TOMODATITOEIGAWOMIMASITA.' },
-  { kanji: '毎日少しずつ練習しよう。',     hira: 'まいにちすこしずつれんしゅうしよう。', romaji: 'MAINITISUKOSIZUTURENSYUUSIYOU.' },
+  { kanji: '電話をかけます。',             hira: 'でんわをかけます。',                   romaji: 'DENWAWOKAKEMASU.' },
+  { kanji: '手紙を書きます。',             hira: 'てがみをかきます。',                   romaji: 'TEGAMIWOKAKIMASU.' },
+  { kanji: '猫が好きです。',               hira: 'ねこがすきです。',                     romaji: 'NEKOGASUKIDESU.' },
+  { kanji: '虫が苦手です。',               hira: 'むしがにがてです。',                   romaji: 'MUSIGANIGATEDESU.' },
+  { kanji: 'ドアを閉めます。',             hira: 'どあをしめます。',                     romaji: 'DOAWOSIMEMASU.' },
+  { kanji: '声が大きいです。',             hira: 'こえがおおきいです。',                 romaji: 'KOEGAOOKIIDESU.' },
+  { kanji: '毎日少しずつ練習します。',     hira: 'まいにちすこしずつれんしゅうします。', romaji: 'MAINITISUKOSIZUTURENSYUUSIMASU.' },
 ];
 
 // ── KEYBOARD LAYOUT ───────────────────────────────────
@@ -502,7 +484,7 @@ const FINGER_LABEL = {
 };
 
 // ── STATE ─────────────────────────────────────────────
-let timeLeft, charCount, mistakes, keystrokes, sentencesDone;
+let elapsedSec, charCount, mistakes, keystrokes, sentencesDone;
 let sentIdx, pos, timerID, running;
 let pool = [];
 
@@ -579,7 +561,7 @@ function startGame() {
   document.getElementById('startScreen').classList.add('hidden');
   document.getElementById('resultScreen').classList.add('hidden');
 
-  timeLeft = TOTAL_SEC;
+  elapsedSec = 0;
   charCount = 0;
   mistakes = 0;
   keystrokes = 0;
@@ -591,7 +573,7 @@ function startGame() {
   pool = shuffle([...SENTENCES]);
 
   document.getElementById('charCount').textContent = '0';
-  updateTimerDisplay();
+  updateElapsedDisplay();
   loadSentence();
   updateUI();
 
@@ -604,6 +586,10 @@ function endGame() {
   running = false;
   clearHighlights();
 
+  const m = Math.floor(elapsedSec / 60);
+  const s = elapsedSec % 60;
+  const timeStr = `${m}分${String(s).padStart(2,'0')}秒`;
+
   document.getElementById('rChars').textContent = charCount;
   document.getElementById('rSentences').textContent = sentencesDone;
   document.getElementById('rMistakes').textContent = mistakes;
@@ -611,26 +597,20 @@ function endGame() {
     ? Math.round((charCount / keystrokes) * 100) + '%'
     : '—';
   document.getElementById('rAccuracy').textContent = acc;
+  document.getElementById('rTime').textContent = timeStr;
   document.getElementById('resultScreen').classList.remove('hidden');
 }
 
 function tick() {
-  timeLeft--;
-  updateTimerDisplay();
-  if (timeLeft <= 0) endGame();
+  elapsedSec++;
+  updateElapsedDisplay();
 }
 
-function updateTimerDisplay() {
-  const m = Math.floor(timeLeft / 60);
-  const s = timeLeft % 60;
-  document.getElementById('timerText').textContent =
+function updateElapsedDisplay() {
+  const m = Math.floor(elapsedSec / 60);
+  const s = elapsedSec % 60;
+  document.getElementById('elapsedText').textContent =
     `${m}分 ${String(s).padStart(2, '0')}秒`;
-
-  const pct = (timeLeft / TOTAL_SEC) * 100;
-  const bar = document.getElementById('timerBar');
-  bar.style.width = pct + '%';
-  bar.className = 'timer-bar-fill' +
-    (pct < 20 ? ' danger' : pct < 40 ? ' warn' : '');
 }
 
 function loadSentence() {
