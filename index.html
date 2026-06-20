@@ -6,18 +6,23 @@
 <title>タイピング練習 - 日本語入力</title>
 <style>
 :root {
-  --bg1: #f3f3f3; --bg2: #e9e9e9;
-  --card: #ffffff;
-  --ink: #161616; --muted: #777777; --faint: #bcbcbc;
-  --primary: #1c1c1c; --primary-d: #000000;
-  --accent: #1c1c1c; --accent-d: #000000;   /* non-hand highlights are black */
-  --hand: #ef4d4d;                            /* the only color: active finger (hand) */
-  --ok: #1c1c1c;
-  --key: #f0f0f0; --key-edge: #cfcfcf; --key-ink: #222222;
-  --radius: 16px;
-  --sh-sm: 0 1px 3px rgba(0,0,0,.08);
-  --sh-md: 0 6px 20px rgba(0,0,0,.10);
-  --sh-lg: 0 18px 50px rgba(0,0,0,.28);
+  /* palette */
+  --p: #1a1a1a; --pd: #000; --pl: #f0f0f0;     /* main (near-black) / dark / light */
+  --ok: #133463; --ok-bg: #e9edf6;             /* correct: navy */
+  --ng: #b60033; --ng-bg: #fbe9ed;             /* incorrect: crimson */
+  --bg: #f6f6f4; --card: #fff;                 /* page / card */
+  --tx: #1a1a1a; --mu: #777; --br: #ddd;       /* text / muted / border */
+  --r: 6px;                                    /* common radius */
+  --hand: #ef4d4d;                             /* simulated finger (kept) */
+
+  /* derived aliases used across the sheet */
+  --ink: var(--tx); --muted: var(--mu); --faint: #bbb;
+  --primary: var(--p); --primary-d: var(--pd);
+  --key: #f4f4f3; --key-edge: #d9d9d6; --key-ink: #222;
+  --radius: 10px;                              /* cards (slightly softer) */
+  --sh-sm: 0 1px 3px rgba(0,0,0,.07);
+  --sh-md: 0 5px 16px rgba(0,0,0,.08);
+  --sh-lg: 0 18px 48px rgba(0,0,0,.25);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,7 +30,7 @@ body {
   font-family: system-ui, -apple-system, 'Hiragino Kaku Gothic ProN',
                'Hiragino Sans', 'Yu Gothic', Meiryo, sans-serif;
   color: var(--ink);
-  background: linear-gradient(160deg, var(--bg1), var(--bg2));
+  background: var(--bg);
   min-height: 100vh;
   display: flex; flex-direction: column;
   user-select: none;
@@ -71,19 +76,20 @@ header {
 /* Score */
 .score-box {
   display: inline-flex; align-items: center; gap: 12px;
-  background: var(--card); border-radius: 999px;
+  background: var(--card); border: 1px solid var(--br); border-radius: 999px;
   padding: 8px 10px 8px 20px; box-shadow: var(--sh-sm);
 }
 .score-label { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
 .score-value {
-  font-size: 22px; font-weight: 800; color: var(--primary);
+  font-size: 22px; font-weight: 800; color: var(--ok);
   min-width: 64px; text-align: center; font-variant-numeric: tabular-nums;
-  background: #f0f0f0; border-radius: 999px; padding: 4px 16px;
+  background: var(--ok-bg); border-radius: 999px; padding: 4px 16px;
 }
 
 /* Sentence */
 .sentence-box {
-  text-align: center; background: var(--card); border-radius: var(--radius);
+  text-align: center; background: var(--card);
+  border: 1px solid var(--br); border-radius: var(--radius);
   padding: 26px 40px; box-shadow: var(--sh-md);
   width: 100%; max-width: 760px;
   transition: box-shadow .2s, background .2s;
@@ -97,15 +103,15 @@ header {
 }
 .r-done { color: var(--faint); }
 .r-cursor {
-  color: white; background: var(--ink);
-  border-radius: 5px; padding: 1px 3px; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  color: white; background: var(--ok);
+  border-radius: var(--r); padding: 1px 4px; box-shadow: 0 2px 8px rgba(19,52,99,.3);
   animation: blink-bg 1.1s ease-in-out infinite;
 }
 .r-cursor.wrong {
-  background: #fff; color: #000; box-shadow: inset 0 0 0 2px #000;
+  background: var(--ng-bg); color: var(--ng); box-shadow: inset 0 0 0 2px var(--ng);
   animation: shake .3s ease;
 }
-@keyframes blink-bg { 50% { background: #444; } }
+@keyframes blink-bg { 50% { background: #0d2649; } }
 @keyframes shake {
   0%,100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
@@ -115,32 +121,32 @@ header {
 
 /* Keyboard */
 .keyboard-wrap {
-  background: linear-gradient(150deg, #e4e4e4, #d8d8d8);
-  border-radius: 18px;
+  background: #ececea;
+  border: 1px solid var(--br); border-radius: 14px;
   padding: 16px; box-shadow: var(--sh-md), inset 0 1px 0 rgba(255,255,255,.6);
   position: relative; overflow: visible;
 }
 .key-row { display: flex; gap: 6px; margin-bottom: 6px; justify-content: center; }
 .key-row:last-child { margin-bottom: 0; }
 .key {
-  height: 46px; min-width: 46px; border-radius: 9px;
+  height: 46px; min-width: 46px; border-radius: var(--r);
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 700; color: var(--key-ink);
   cursor: default;
   background: linear-gradient(180deg, #fcfcfc, var(--key));
-  box-shadow: 0 2px 0 var(--key-edge), 0 3px 5px rgba(0,0,0,.12);
+  box-shadow: 0 2px 0 var(--key-edge), 0 3px 5px rgba(0,0,0,.1);
   transition: transform .08s, box-shadow .08s, filter .1s, color .1s;
   position: relative; padding: 0 8px;
 }
 .key.pressed { transform: translateY(2px); box-shadow: 0 0 0 var(--key-edge), 0 1px 3px rgba(0,0,0,.14); }
 .key.next-key {
   color: #fff; z-index: 2;
-  background: linear-gradient(180deg, #2c2c2c, #111);
+  background: linear-gradient(180deg, #1d3f73, var(--ok));
   animation: key-pulse .8s ease-in-out infinite alternate;
 }
 @keyframes key-pulse {
-  from { box-shadow: 0 2px 0 var(--key-edge), 0 0 0 2.5px #000, 0 0 7px 1px rgba(0,0,0,.3); }
-  to   { box-shadow: 0 2px 0 var(--key-edge), 0 0 0 2.5px #000, 0 0 18px 5px rgba(0,0,0,.5); }
+  from { box-shadow: 0 2px 0 var(--key-edge), 0 0 0 2.5px var(--ok), 0 0 7px 1px rgba(19,52,99,.35); }
+  to   { box-shadow: 0 2px 0 var(--key-edge), 0 0 0 2.5px var(--ok), 0 0 18px 5px rgba(19,52,99,.6); }
 }
 .key.home-pos::after {
   content: ''; position: absolute; bottom: 6px;
@@ -155,7 +161,7 @@ header {
 /* ── FINGER GUIDE ── */
 .finger-guide {
   display: flex; align-items: center; justify-content: center; gap: clamp(12px, 3vw, 30px);
-  background: var(--card); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--br); border-radius: var(--radius);
   padding: 16px 24px; box-shadow: var(--sh-md); width: 100%; max-width: 760px;
 }
 .hand-section { display: flex; flex-direction: column; align-items: center; gap: 8px; }
@@ -189,7 +195,7 @@ header {
 .center-sentence {
   flex: 1; min-width: 240px; max-width: 460px;
   text-align: center; padding: 0 14px;
-  border-left: 1px solid #eeeeee; border-right: 1px solid #eeeeee;
+  border-left: 1px solid var(--br); border-right: 1px solid var(--br);
 }
 .cs-kanji { font-size: 19px; font-weight: 700; color: var(--ink); margin-bottom: 5px; line-height: 1.4; }
 .cs-hira  { font-size: 11px; color: var(--muted); margin-bottom: 7px; letter-spacing: .04em; }
@@ -209,7 +215,8 @@ header {
 @keyframes ov-in { from { opacity: 0; } to { opacity: 1; } }
 .overlay.hidden { display: none; }
 .ov-box {
-  background: var(--card); border-radius: 22px; padding: clamp(28px, 5vw, 44px) clamp(24px, 6vw, 56px);
+  background: var(--card); border: 1px solid var(--br); border-radius: 14px;
+  padding: clamp(28px, 5vw, 44px) clamp(24px, 6vw, 56px);
   text-align: center; box-shadow: var(--sh-lg);
   max-width: 520px; width: 90%;
   animation: pop-in .3s cubic-bezier(.2,.9,.3,1.2);
@@ -220,47 +227,47 @@ header {
 
 /* Home-position legend */
 .home-guide {
-  background: #f5f5f5; border: 1px solid #e6e6e6; border-radius: 14px;
+  background: var(--pl); border: 1px solid var(--br); border-radius: var(--radius);
   padding: 18px; margin-bottom: 22px;
 }
-.home-guide strong { display: block; margin-bottom: 12px; color: var(--primary-d); font-size: 13px; letter-spacing: .04em; }
+.home-guide strong { display: block; margin-bottom: 12px; color: var(--ok); font-size: 13px; letter-spacing: .04em; }
 .home-keys { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
 .hk-group { display: flex; gap: 5px; }
 .hk { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .hk kbd {
   font-family: 'SF Mono','Roboto Mono',monospace; font-size: 13px; font-weight: 700;
   background: linear-gradient(180deg,#fff,var(--key)); color: var(--key-ink);
-  border-radius: 7px; box-shadow: 0 2px 0 var(--key-edge); padding: 7px 0; width: 30px;
+  border-radius: var(--r); box-shadow: 0 2px 0 var(--key-edge); padding: 7px 0; width: 30px;
 }
 .hk.bump kbd { box-shadow: 0 2px 0 var(--key-edge), inset 0 -6px 0 -4px var(--ink); }
 .hk small { font-size: 9px; color: var(--muted); }
 .home-note { font-size: 12px; color: var(--muted); margin-top: 12px; }
 
 .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 22px 0; }
-.stat-card { background: #f5f5f5; border-radius: 14px; padding: 16px 10px; }
+.stat-card { background: var(--pl); border: 1px solid var(--br); border-radius: var(--radius); padding: 16px 10px; }
 .stat-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; letter-spacing: .04em; }
-.stat-val { font-size: 28px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat-val { font-size: 28px; font-weight: 800; color: var(--ok); font-variant-numeric: tabular-nums; }
 .btn-primary {
-  background: linear-gradient(180deg, #2a2a2a, #000); color: white; border: none;
-  border-radius: 13px; padding: 14px 48px;
+  background: var(--p); color: white; border: none;
+  border-radius: var(--r); padding: 14px 48px;
   font-size: 17px; font-weight: 800; cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0,0,0,.28); transition: transform .1s, box-shadow .2s, filter .15s;
+  box-shadow: 0 6px 16px rgba(0,0,0,.22); transition: transform .1s, box-shadow .2s, background .15s;
 }
-.btn-primary:hover { filter: brightness(1.25); box-shadow: 0 10px 26px rgba(0,0,0,.38); }
+.btn-primary:hover { background: var(--pd); box-shadow: 0 9px 22px rgba(0,0,0,.3); }
 .btn-primary:active { transform: translateY(2px); }
-.btn-green { background: linear-gradient(180deg, #2a2a2a, #000); box-shadow: 0 8px 20px rgba(0,0,0,.28); }
-.btn-green:hover { box-shadow: 0 10px 26px rgba(0,0,0,.38); }
+.btn-green { background: var(--p); box-shadow: 0 6px 16px rgba(0,0,0,.22); }
+.btn-green:hover { background: var(--pd); box-shadow: 0 9px 22px rgba(0,0,0,.3); }
 
 /* Mistake / correct flash on sentence box */
 .sentence-box.error-flash { animation: err-flash .35s ease; }
 @keyframes err-flash {
   0%,100% { box-shadow: var(--sh-md); }
-  50% { box-shadow: 0 0 0 4px rgba(0,0,0,.45), var(--sh-md); }
+  50% { box-shadow: 0 0 0 3px var(--ng), var(--sh-md); }
 }
 .sentence-box.ok-flash { animation: ok-flash .3s ease; }
 @keyframes ok-flash {
   0%,100% { background: var(--card); }
-  50% { background: #ededed; }
+  50% { background: var(--ok-bg); }
 }
 
 @media (max-width: 560px) {
