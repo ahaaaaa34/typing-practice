@@ -168,19 +168,18 @@ header {
 .fng-rp .fng-bar { height: 44px; }
 .fng-th .fng-bar { height: 36px; border-radius: 6px; width: 36px; }
 
-/* Center info */
-.center-info { text-align: center; padding: 0 12px; }
-.ci-label { font-size: 11px; color: #999; margin-bottom: 4px; }
-.ci-key {
-  width: 52px; height: 52px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; font-weight: bold; color: white;
-  background: #e74c3c;
-  margin: 0 auto 6px;
-  box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+/* Center example sentence (between the hands) */
+.center-sentence {
+  flex: 1; min-width: 300px; max-width: 460px;
+  text-align: center; padding: 0 16px;
 }
-.ci-finger { color: #e74c3c; }
-.ci-finger { font-size: 13px; font-weight: bold; color: #333; }
+.cs-kanji { font-size: 20px; color: #2196f3; margin-bottom: 4px; line-height: 1.4; }
+.cs-hira  { font-size: 12px; color: #888; margin-bottom: 6px; }
+.cs-romaji {
+  font-size: 16px; font-weight: bold; letter-spacing: 1px;
+  font-family: 'Courier New', Courier, monospace; line-height: 1.7;
+  word-break: break-all;
+}
 
 /* ── OVERLAYS ── */
 .overlay {
@@ -841,10 +840,10 @@ function buildFingerGuide() {
       <div class="hand-fingers">${leftFingers}</div>
       <div class="hand-label">左手</div>
     </div>
-    <div class="center-info">
-      <div class="ci-label">次に押すキー</div>
-      <div class="ci-key f-none" id="ciKey">—</div>
-      <div class="ci-finger" id="ciFinger">—</div>
+    <div class="center-sentence">
+      <div class="cs-kanji" id="csKanji">　</div>
+      <div class="cs-hira" id="csHira">　</div>
+      <div class="cs-romaji" id="csRomaji">　</div>
     </div>
     <div class="hand-section">
       <div class="hand-fingers">${rightFingers}</div>
@@ -999,6 +998,8 @@ function updateUI() {
   const s = currentSentence();
   document.getElementById('kanjiText').textContent = s.kanji;
   document.getElementById('hiraText').textContent = s.hira;
+  document.getElementById('csKanji').textContent = s.kanji;
+  document.getElementById('csHira').textContent = s.hira;
   renderSentence(false);
   highlightNext();
 }
@@ -1018,10 +1019,12 @@ function renderSentence(isError) {
   }
   const restTodo = units.slice(unitIdx + 1).map(u => u.primary).join('');
 
-  document.getElementById('romajiText').innerHTML =
+  const html =
     `<span class="r-done">${doneUnits}${curDone}</span>` +
     (cursorCh ? `<span class="r-cursor${isError ? ' wrong' : ''}">${cursorCh}</span>` : '') +
     `<span class="r-todo">${curTodo}${restTodo}</span>`;
+  document.getElementById('romajiText').innerHTML = html;
+  document.getElementById('csRomaji').innerHTML = html;
 }
 
 // Highlights the next key / finger based on the current primary spelling.
@@ -1046,12 +1049,6 @@ function clearHighlights() {
 }
 
 function updateFingerInfo(ch, finger) {
-  const ciKey = document.getElementById('ciKey');
-  const ciFinger = document.getElementById('ciFinger');
-
-  ciKey.textContent = ch === ' ' ? '␣' : ch;
-  ciFinger.textContent = FINGER_LABEL[finger] || '—';
-
   const fngEl = document.getElementById(`fng-${finger}`);
   if (fngEl) fngEl.classList.add('active');
 }
