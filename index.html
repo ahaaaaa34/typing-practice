@@ -65,6 +65,16 @@ header {
 }
 .btn-end:hover { background: rgba(255,255,255,.26); }
 .btn-end:active { transform: scale(.96); }
+.mode-toggle { display: flex; background: rgba(255,255,255,.12); border-radius: 999px; padding: 3px; }
+.mode-btn {
+  border: none; background: transparent; color: rgba(255,255,255,.7);
+  font-size: 12px; font-weight: 700; padding: 5px 13px; border-radius: 999px;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.mode-btn.active { background: #fff; color: var(--p); }
+.ov-toggle { display: inline-flex; background: var(--pl); margin: 0 auto 20px; }
+.ov-toggle .mode-btn { color: var(--mu); padding: 7px 18px; font-size: 13px; }
+.ov-toggle .mode-btn.active { background: var(--p); color: #fff; }
 
 /* ── GAME AREA ── */
 .game-area {
@@ -99,8 +109,12 @@ header {
 .romaji-text {
   font-size: 22px; font-weight: 700; letter-spacing: 2px;
   font-family: 'SF Mono', 'Roboto Mono', 'Courier New', monospace; line-height: 1.9;
-  min-height: 42px; word-break: break-all;
+  min-height: 42px; overflow-wrap: break-word; word-break: normal;
 }
+/* English mode: no kanji/hira; the typing line carries the sentence */
+.mode-en .kanji-text, .mode-en .hira-text,
+.mode-en .cs-kanji, .mode-en .cs-hira { display: none; }
+.mode-en .romaji-text { letter-spacing: 1px; }
 .r-done { color: var(--faint); }
 .r-cursor {
   color: white; background: var(--ok);
@@ -202,7 +216,7 @@ header {
 .cs-romaji {
   font-size: 16px; font-weight: 700; letter-spacing: 1.5px;
   font-family: 'SF Mono', 'Roboto Mono', 'Courier New', monospace; line-height: 1.6;
-  word-break: break-all;
+  overflow-wrap: break-word; word-break: normal;
 }
 
 /* ── OVERLAYS ── */
@@ -288,6 +302,10 @@ header {
     <span class="hdr-sub">日本語入力</span>
   </div>
   <div class="hdr-right">
+    <div class="mode-toggle">
+      <button class="mode-btn active" data-mode="ja" onclick="setMode('ja')">日本語</button>
+      <button class="mode-btn" data-mode="en" onclick="setMode('en')">English</button>
+    </div>
     <span class="elapsed-label">経過時間</span>
     <div class="elapsed-text" id="elapsedText">0分 00秒</div>
     <button class="btn-end" onclick="endGame()">✕ 終了</button>
@@ -315,8 +333,12 @@ header {
 <!-- START OVERLAY -->
 <div class="overlay" id="startScreen">
   <div class="ov-box">
-    <div class="ov-title">日本語タイピング練習</div>
-    <p class="ov-desc">ホームポジションを意識しながら日本語を入力しよう。<br>次に押すキーと使う指が赤く光ります。</p>
+    <div class="ov-title">タイピング練習</div>
+    <p class="ov-desc">ホームポジションを意識しながらタイピング。<br>次に押すキーと使う指が光ります。</p>
+    <div class="mode-toggle ov-toggle">
+      <button class="mode-btn active" data-mode="ja" onclick="setMode('ja')">日本語</button>
+      <button class="mode-btn" data-mode="en" onclick="setMode('en')">English</button>
+    </div>
     <div class="home-guide">
       <strong>ホームポジション（指の基本位置）</strong>
       <div class="home-keys">
@@ -1095,6 +1117,314 @@ const SENTENCES = [
   { kanji: '湿布を貼って腫れを抑えます。', hira: 'しっぷをはってはれをおさえます。', romaji: 'SIPPUWOHATTEHAREWOOSAEMASU' },
 ];
 
+const EN_SENTENCES = [
+  { text: 'The morning sun warms the quiet kitchen.' },
+  { text: 'She brews a cup of coffee before work.' },
+  { text: 'He folds the laundry and makes the bed.' },
+  { text: 'We walk the dog around the block.' },
+  { text: 'They water the plants on the balcony.' },
+  { text: 'I open the window to let fresh air in.' },
+  { text: 'The kettle whistles as the toast pops up.' },
+  { text: 'He ties his shoes and grabs his bag.' },
+  { text: 'She brushes her teeth and combs her hair.' },
+  { text: 'The alarm rings softly at six in the morning.' },
+  { text: 'We share breakfast at the round table.' },
+  { text: 'He locks the door and heads to the bus.' },
+  { text: 'She reads the news while eating cereal.' },
+  { text: 'The cat stretches lazily on the warm rug.' },
+  { text: 'I write a short list of things to do.' },
+  { text: 'They tidy the room before the guests arrive.' },
+  { text: 'He fills the bottle with cold water.' },
+  { text: 'She hums a tune as she cleans the dishes.' },
+  { text: 'We turn off the lights and lock up.' },
+  { text: 'The quiet house settles down for the night.' },
+  { text: 'Soft rain falls gently on the green hills.' },
+  { text: 'The wind bends the tall grass by the river.' },
+  { text: 'Bright stars fill the clear winter sky.' },
+  { text: 'A rainbow arches over the wet valley.' },
+  { text: 'The river flows calmly past the old bridge.' },
+  { text: 'Thick fog rolls across the silent harbor.' },
+  { text: 'Golden leaves drift down from the oak tree.' },
+  { text: 'The waves crash hard against the rocky shore.' },
+  { text: 'A gentle breeze cools the summer afternoon.' },
+  { text: 'Snow covers the rooftops in soft white piles.' },
+  { text: 'The full moon rises above the dark forest.' },
+  { text: 'Lightning splits the heavy evening clouds.' },
+  { text: 'Morning dew sparkles on every blade of grass.' },
+  { text: 'The desert glows red beneath the setting sun.' },
+  { text: 'Tall pine trees sway in the cold mountain air.' },
+  { text: 'A quiet stream winds through the mossy woods.' },
+  { text: 'The storm passes and the sky turns blue.' },
+  { text: 'Warm sunlight spills across the open meadow.' },
+  { text: 'Frost paints delicate patterns on the glass.' },
+  { text: 'The tide slowly creeps up the sandy beach.' },
+  { text: 'The brown fox darts across the empty field.' },
+  { text: 'A small bird builds a nest in the hedge.' },
+  { text: 'The lazy cat naps in a patch of sun.' },
+  { text: 'Horses gallop freely across the wide plain.' },
+  { text: 'An elephant sprays water with its long trunk.' },
+  { text: 'The rabbit twitches its ears and hops away.' },
+  { text: 'A green frog leaps into the cool pond.' },
+  { text: 'Goldfish circle slowly in the glass bowl.' },
+  { text: 'The owl watches quietly from a high branch.' },
+  { text: 'Busy ants carry crumbs back to their nest.' },
+  { text: 'A whale spouts a tall column of mist.' },
+  { text: 'The puppy chases its tail in happy circles.' },
+  { text: 'Bees drift between the bright yellow flowers.' },
+  { text: 'A deer steps softly through the morning mist.' },
+  { text: 'The turtle suns itself on a smooth flat rock.' },
+  { text: 'Sheep graze peacefully on the grassy slope.' },
+  { text: 'A squirrel buries acorns beneath the old tree.' },
+  { text: 'The kitten pounces on a ball of soft yarn.' },
+  { text: 'Wild geese fly south in a long, neat line.' },
+  { text: 'The spider spins a web between two twigs.' },
+  { text: 'She slices the onions into thin, even rings.' },
+  { text: 'He stirs the soup over a gentle flame.' },
+  { text: 'We knead the dough and let it rest.' },
+  { text: 'The bread bakes to a warm golden crust.' },
+  { text: 'She peels an apple in one long ribbon.' },
+  { text: 'He grills the fish until it flakes apart.' },
+  { text: 'Fresh herbs add color to the simple dish.' },
+  { text: 'They simmer the stew for a slow hour.' },
+  { text: 'She sprinkles salt and pepper on the eggs.' },
+  { text: 'We pour the batter into a hot, oiled pan.' },
+  { text: 'The kettle boils for a pot of green tea.' },
+  { text: 'He chops the carrots into small neat cubes.' },
+  { text: 'Warm cookies cool on the kitchen counter.' },
+  { text: 'She mixes the flour with a wooden spoon.' },
+  { text: 'They share a bowl of noodles after the trip.' },
+  { text: 'He spreads butter on a thick slice of bread.' },
+  { text: 'Ripe berries fill the basket to the brim.' },
+  { text: 'She whisks the cream until it forms peaks.' },
+  { text: 'We season the rice with a pinch of salt.' },
+  { text: 'The pan sizzles as the vegetables fry.' },
+  { text: 'We pack our bags for the long train ride.' },
+  { text: 'The map shows a shortcut through the hills.' },
+  { text: 'She buys a ticket at the busy station.' },
+  { text: 'They board the early bus to the coast.' },
+  { text: 'He gazes at the view from the high tower.' },
+  { text: 'We cross the river on a narrow wooden boat.' },
+  { text: 'The plane climbs above the soft white clouds.' },
+  { text: 'She snaps a photo of the ancient temple.' },
+  { text: 'They wander through the old market streets.' },
+  { text: 'We rest at a small inn beside the lake.' },
+  { text: 'The road winds slowly up the steep hill.' },
+  { text: 'He asks a stranger for simple directions.' },
+  { text: 'They taste the local food at a tiny stall.' },
+  { text: 'The ferry glides across the calm blue bay.' },
+  { text: 'We watch the sunset from the quiet pier.' },
+  { text: 'She collects shells along the empty beach.' },
+  { text: 'The guide points out a hidden waterfall.' },
+  { text: 'They hike a rugged trail to the summit.' },
+  { text: 'We share stories around the warm campfire.' },
+  { text: 'The night train rolls on toward the city.' },
+  { text: 'She presents the new plan to the team.' },
+  { text: 'He prints the report and signs each page.' },
+  { text: 'We discuss the budget in a short meeting.' },
+  { text: 'They meet the deadline with time to spare.' },
+  { text: 'She answers the phone in a calm, clear voice.' },
+  { text: 'He sorts the files into tidy labeled folders.' },
+  { text: 'The class reads the story aloud together.' },
+  { text: 'We solve the math problem step by step.' },
+  { text: 'She memorizes the new words for the test.' },
+  { text: 'He draws a neat diagram on the white board.' },
+  { text: 'They review the notes before the big exam.' },
+  { text: 'The teacher explains the lesson with care.' },
+  { text: 'We gather data and chart the results.' },
+  { text: 'She raises her hand to ask a question.' },
+  { text: 'He packs his desk and heads home at five.' },
+  { text: 'The students share ideas in small groups.' },
+  { text: 'We plan the project on a wide whiteboard.' },
+  { text: 'She checks her email and replies politely.' },
+  { text: 'He practices the speech in front of a mirror.' },
+  { text: 'The library stays quiet during final week.' },
+  { text: 'The phone buzzes with a brief reminder.' },
+  { text: 'She types a quick message and hits send.' },
+  { text: 'He charges the laptop before the long flight.' },
+  { text: 'We back up the files to a small drive.' },
+  { text: 'The screen glows softly in the dark room.' },
+  { text: 'She updates the app to fix a tiny bug.' },
+  { text: 'He plugs the cable into the right port.' },
+  { text: 'The robot moves smoothly across the floor.' },
+  { text: 'We stream a film on the wide flat screen.' },
+  { text: 'She scrolls through photos from the trip.' },
+  { text: 'The printer hums as it prints the page.' },
+  { text: 'He resets the router to fix the network.' },
+  { text: 'A new email lands in the quiet inbox.' },
+  { text: 'She codes a simple game in an afternoon.' },
+  { text: 'The camera captures a sharp, clear image.' },
+  { text: 'We share the link in the group chat.' },
+  { text: 'He swipes the card and the gate opens.' },
+  { text: 'The battery lasts the whole busy day.' },
+  { text: 'She mutes the call and takes a deep breath.' },
+  { text: 'The clock app wakes us at dawn.' },
+  { text: 'He warms up before the morning run.' },
+  { text: 'She sprints the final lap to the finish.' },
+  { text: 'They pass the ball across the green field.' },
+  { text: 'We swim slow laps in the cool pool.' },
+  { text: 'He throws the ball far into the outfield.' },
+  { text: 'She jumps the hurdle with an easy stride.' },
+  { text: 'The team cheers loudly from the stands.' },
+  { text: 'He climbs the rope hand over hand.' },
+  { text: 'They ride their bikes along the river path.' },
+  { text: 'She stretches her legs before the match.' },
+  { text: 'We hike the steep trail at a steady pace.' },
+  { text: 'He kicks the ball straight into the net.' },
+  { text: 'The runners line up at the white start.' },
+  { text: 'She lifts the weight with careful form.' },
+  { text: 'They skate smoothly across the frozen pond.' },
+  { text: 'He dribbles the ball past two defenders.' },
+  { text: 'We toss the frisbee across the open park.' },
+  { text: 'She serves the ball over the high net.' },
+  { text: 'The crowd roars as the runner pulls ahead.' },
+  { text: 'He catches the ball and sprints for home.' },
+  { text: 'She plays a soft tune on the old piano.' },
+  { text: 'He strums the guitar beside the warm fire.' },
+  { text: 'The drummer keeps a steady, lively beat.' },
+  { text: 'We sing a cheerful song with the children.' },
+  { text: 'She paints the sky in shades of pink.' },
+  { text: 'He sketches the harbor in quick, light lines.' },
+  { text: 'The choir blends their voices in harmony.' },
+  { text: 'She molds the soft clay into a small bowl.' },
+  { text: 'He hums a melody he heard on the radio.' },
+  { text: 'The flute carries a clear, gentle sound.' },
+  { text: 'We fold bright paper into tiny cranes.' },
+  { text: 'She mixes blue and yellow to make green.' },
+  { text: 'The band tunes their instruments on stage.' },
+  { text: 'He carves a smooth shape from a block of wood.' },
+  { text: 'A violin sings above the quiet orchestra.' },
+  { text: 'She frames the photo and hangs it on the wall.' },
+  { text: 'The dancers move gently to the slow music.' },
+  { text: 'He taps his foot in time with the song.' },
+  { text: 'We trace the outline with a fine brush.' },
+  { text: 'The gallery displays bold and quiet works.' },
+  { text: 'A kind word can brighten a long day.' },
+  { text: 'She smiles warmly at the good news.' },
+  { text: 'He feels proud of the finished project.' },
+  { text: 'We laugh together at the silly joke.' },
+  { text: 'A quiet calm settles over the room.' },
+  { text: 'She thanks the stranger for the small help.' },
+  { text: 'He takes a deep breath and stays calm.' },
+  { text: 'They share a moment of honest joy.' },
+  { text: 'A gentle hug eases the heavy mood.' },
+  { text: 'She speaks softly to soothe the crying child.' },
+  { text: 'He gathers his courage and steps forward.' },
+  { text: 'We cherish the simple things in life.' },
+  { text: 'A warm letter lifts her tired spirit.' },
+  { text: 'He forgives the mistake without a word.' },
+  { text: 'They greet each other with bright smiles.' },
+  { text: 'She hums happily as she walks to school.' },
+  { text: 'A small success feels truly sweet.' },
+  { text: 'He nods kindly and lends a hand.' },
+  { text: 'We treasure the quiet hours together.' },
+  { text: 'Her gentle laugh fills the whole room.' },
+  { text: 'He sweeps the porch and shakes the mat.' },
+  { text: 'She wipes the table after the meal.' },
+  { text: 'We hang the washing out to dry.' },
+  { text: 'He fixes the broken chair with a few nails.' },
+  { text: 'She dusts the shelves and sorts the books.' },
+  { text: 'The kettle steams on the small stove.' },
+  { text: 'He paints the fence a clean, bright white.' },
+  { text: 'She arranges fresh flowers in a tall vase.' },
+  { text: 'We rake the leaves into a neat pile.' },
+  { text: 'He oils the squeaky hinge on the gate.' },
+  { text: 'The city wakes as the first train arrives.' },
+  { text: 'She crosses the street at the green light.' },
+  { text: 'Tall buildings cast long morning shadows.' },
+  { text: 'He buys a paper at the corner stand.' },
+  { text: 'The market fills with the smell of bread.' },
+  { text: 'We wait for the bus in a short line.' },
+  { text: 'Street lamps glow along the quiet avenue.' },
+  { text: 'She feeds the pigeons in the small park.' },
+  { text: 'The fountain splashes in the busy square.' },
+  { text: 'He parks his bike beside the brick wall.' },
+  { text: 'She drinks plenty of water through the day.' },
+  { text: 'He stretches gently to ease his stiff back.' },
+  { text: 'We walk briskly around the leafy park.' },
+  { text: 'A good sleep restores her tired body.' },
+  { text: 'He breathes slowly to calm his racing heart.' },
+  { text: 'She eats a bowl of fresh fruit each morning.' },
+  { text: 'They rest their eyes after the long screen time.' },
+  { text: 'He trims his nails and washes his hands.' },
+  { text: 'A balanced meal gives steady energy.' },
+  { text: 'She takes a short nap to clear her head.' },
+  { text: 'Water boils faster high up on the mountain.' },
+  { text: 'The moon pulls the tides across the sea.' },
+  { text: 'Plants turn sunlight into simple sugar.' },
+  { text: 'Light travels much faster than sound.' },
+  { text: 'Ice floats because it is lighter than water.' },
+  { text: 'Bees help flowers spread their fine pollen.' },
+  { text: 'The earth spins once in a single day.' },
+  { text: 'Salt lowers the freezing point of water.' },
+  { text: 'Magnets pull iron but ignore plain wood.' },
+  { text: 'Warm air rises while cool air sinks down.' },
+  { text: 'Rainbows form when light bends through rain.' },
+  { text: 'Sound cannot travel through empty space.' },
+  { text: 'Roots draw water up into the green stem.' },
+  { text: 'The sun is a vast ball of burning gas.' },
+  { text: 'Sugar dissolves quickly in a cup of tea.' },
+  { text: 'Slow and steady wins the long race.' },
+  { text: 'Many small drops can fill a deep bucket.' },
+  { text: 'Even a wise person can make a mistake.' },
+  { text: 'A journey of a mile starts with one step.' },
+  { text: 'Look before you take a careful leap.' },
+  { text: 'Honesty is the best plan in the end.' },
+  { text: 'Practice every day to master a new skill.' },
+  { text: 'Kind words cost little but mean a lot.' },
+  { text: 'Fortune tends to favor the brave heart.' },
+  { text: 'Where there is a will, there is a way.' },
+  { text: 'A calm mind solves the hardest problem.' },
+  { text: 'Good things often come to those who wait.' },
+  { text: 'Two heads can be better than one alone.' },
+  { text: 'Strike while the iron is still hot.' },
+  { text: 'Every cloud may hide a bright silver lining.' },
+  { text: 'Birds of a feather tend to flock together.' },
+  { text: 'Make hay while the warm sun shines.' },
+  { text: 'A stitch in time can save you nine.' },
+  { text: 'Actions speak far louder than empty words.' },
+  { text: 'Knowledge is a treasure no one can steal.' },
+  { text: 'He waters the garden in the cool evening.' },
+  { text: 'She wraps the gift in plain brown paper.' },
+  { text: 'We count the stars from the back porch.' },
+  { text: 'He whittles a small boat from soft pine.' },
+  { text: 'She sorts the mail into two small piles.' },
+  { text: 'The candle flickers in the gentle draft.' },
+  { text: 'He winds the old clock on the mantel.' },
+  { text: 'She mends the torn sleeve with care.' },
+  { text: 'We gather around the table for a board game.' },
+  { text: 'He sharpens the pencil to a fine point.' },
+  { text: 'The puppy curls up in a warm basket.' },
+  { text: 'She labels each jar with a neat tag.' },
+  { text: 'We plant rows of beans in the spring soil.' },
+  { text: 'He polishes his shoes until they shine.' },
+  { text: 'The clock ticks softly in the still hall.' },
+  { text: 'She knits a scarf in a deep navy blue.' },
+  { text: 'We toast marshmallows over the low flames.' },
+  { text: 'He stacks the firewood beside the shed.' },
+  { text: 'The clean sheets smell of fresh, warm air.' },
+  { text: 'She reads a bedtime story to the sleepy child.' },
+  { text: 'A quiet snow blankets the sleeping town.' },
+  { text: 'He jogs along the river as the sun rises.' },
+  { text: 'She arranges the chairs for the evening class.' },
+  { text: 'We follow the path beneath the tall trees.' },
+  { text: 'The baker opens the shop at first light.' },
+  { text: 'He greases the chain on his old bike.' },
+  { text: 'She traces the river on the faded map.' },
+  { text: 'We listen to the rain on the tin roof.' },
+  { text: 'The lantern guides them down the dark lane.' },
+  { text: 'He plants a young tree near the garden gate.' },
+  { text: 'She hangs a wreath on the bright red door.' },
+  { text: 'We sip warm cocoa by the frosty window.' },
+  { text: 'He repairs the kite before the windy day.' },
+  { text: 'The choir practices carols in the old hall.' },
+  { text: 'She waxes the floor until it gleams.' },
+  { text: 'We map the route for the weekend hike.' },
+  { text: 'He feeds the hens at the break of dawn.' },
+  { text: 'The quiet pond mirrors the evening sky.' },
+  { text: 'She files the papers in a steady rhythm.' },
+  { text: 'A warm loaf rests on the cooling rack.' },
+];
+
 // ── KEYBOARD LAYOUT ───────────────────────────────────
 // Each entry: [label, finger, extraClass?]
 const ROWS = [
@@ -1143,8 +1473,10 @@ const FINGER_LABEL = {
 // ── STATE ─────────────────────────────────────────────
 let elapsedSec, charCount, mistakes, keystrokes, sentencesDone;
 let sentIdx, timerID, running;
+let mode = 'ja';  // 'ja' = 日本語(ローマ字) / 'en' = English
+function activeSet() { return mode === 'en' ? EN_SENTENCES : SENTENCES; }
 let pool = [];
-let units = [];   // kana units of current sentence
+let units = [];   // typing units of current sentence
 let unitIdx = 0;  // which unit we're on
 let curBuf = '';  // chars typed toward current unit
 
@@ -1258,7 +1590,18 @@ function buildUnits(hira){
       opts = opts.map(o => (o[0] && !'AIUEO'.includes(o[0])) ? o[0] + o : o);
       sokuon = false;
     }
-    out.push({ opts, primary: opts[0] });
+    out.push({ opts, primary: opts[0], disp: opts[0] });
+  }
+  return out;
+}
+// English: one unit per character. Matching is case-insensitive (the keyboard
+// shows uppercase), so primary/opts use the uppercase key, disp keeps the
+// original character (capitals, spaces, commas, periods).
+function buildUnitsEn(text){
+  const out = [];
+  for (const ch of text){
+    const key = /[a-z]/i.test(ch) ? ch.toUpperCase() : ch;
+    out.push({ opts: [key], primary: key, disp: ch });
   }
   return out;
 }
@@ -1282,6 +1625,15 @@ function shuffle(arr) {
   return a;
 }
 
+function setMode(m) {
+  if (mode === m) return;
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === m));
+  document.body.classList.toggle('mode-en', m === 'en');
+  if (running) startGame();   // restart immediately in the chosen mode
+}
+
 function startGame() {
   document.getElementById('startScreen').classList.add('hidden');
   document.getElementById('resultScreen').classList.add('hidden');
@@ -1292,10 +1644,10 @@ function startGame() {
   keystrokes = 0;
   sentencesDone = 0;
   sentIdx = 0;
-  pos = 0;
   running = true;
 
-  pool = shuffle([...SENTENCES]);
+  document.body.classList.toggle('mode-en', mode === 'en');
+  pool = shuffle([...activeSet()]);
 
   document.getElementById('charCount').textContent = '0';
   updateElapsedDisplay();
@@ -1340,10 +1692,11 @@ function updateElapsedDisplay() {
 
 function loadSentence() {
   if (sentIdx >= pool.length) {
-    pool = shuffle([...SENTENCES]);
+    pool = shuffle([...activeSet()]);
     sentIdx = 0;
   }
-  units = buildUnits(currentSentence().hira);
+  const s = currentSentence();
+  units = mode === 'en' ? buildUnitsEn(s.text) : buildUnits(s.hira);
   unitIdx = 0;
   curBuf = '';
 }
@@ -1352,10 +1705,12 @@ function currentSentence() { return pool[sentIdx] || pool[0]; }
 
 function updateUI() {
   const s = currentSentence();
-  document.getElementById('kanjiText').textContent = s.kanji;
-  document.getElementById('hiraText').textContent = s.hira;
-  document.getElementById('csKanji').textContent = s.kanji;
-  document.getElementById('csHira').textContent = s.hira;
+  const kanji = mode === 'en' ? '' : s.kanji;
+  const hira  = mode === 'en' ? '' : s.hira;
+  document.getElementById('kanjiText').textContent = kanji;
+  document.getElementById('hiraText').textContent = hira;
+  document.getElementById('csKanji').textContent = kanji;
+  document.getElementById('csHira').textContent = hira;
   renderSentence(false);
   highlightNext();
 }
@@ -1363,17 +1718,19 @@ function updateUI() {
 // Renders the displayed (kunrei) romaji with done / cursor / todo coloring,
 // driven by completed units + how far the buffer matches the current primary.
 function renderSentence(isError) {
-  const doneUnits = units.slice(0, unitIdx).map(u => u.primary).join('');
+  const dchar = c => c === ' ' ? ' ' : c;            // keep spaces visible
+  const dstr  = s => s.split('').map(dchar).join('');
+  const doneUnits = units.slice(0, unitIdx).map(u => dstr(u.disp)).join('');
   const cur = units[unitIdx];
   let curDone = '', cursorCh = '', curTodo = '';
   if (cur) {
-    const P = cur.primary;
+    const P = cur.disp;
     const k = primaryMatchLen();
-    curDone  = P.slice(0, k);
-    cursorCh = P[k] || '';
-    curTodo  = P.slice(k + 1);
+    curDone  = dstr(P.slice(0, k));
+    cursorCh = dchar(P[k] || '');
+    curTodo  = dstr(P.slice(k + 1));
   }
-  const restTodo = units.slice(unitIdx + 1).map(u => u.primary).join('');
+  const restTodo = units.slice(unitIdx + 1).map(u => dstr(u.disp)).join('');
 
   const html =
     `<span class="r-done">${doneUnits}${curDone}</span>` +
@@ -1383,20 +1740,21 @@ function renderSentence(isError) {
   document.getElementById('csRomaji').innerHTML = html;
 }
 
-// Highlights the next key / finger based on the current primary spelling.
+// Highlights the next key / finger based on the current primary key.
 function highlightNext() {
   clearHighlights();
   const cur = units[unitIdx];
   if (!cur) { redrawHands(null, null); return; }
   const ch = cur.primary[primaryMatchLen()];
   if (!ch) { redrawHands(null, null); return; }
+  const keyId = ch === ' ' ? 'SPACE' : ch;
 
-  const keyEl = document.getElementById(`key-${ch}`);
+  const keyEl = document.getElementById(`key-${keyId}`);
   if (keyEl) keyEl.classList.add('next-key');
 
-  const finger = KEY_FINGER[ch] || 'none';
+  const finger = KEY_FINGER[keyId] || 'none';
   updateFingerInfo(ch, finger);
-  redrawHands(finger, ch);
+  redrawHands(finger, keyId);
 }
 
 function clearHighlights() {
@@ -1415,12 +1773,15 @@ document.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key.length > 1) return; // ignore Enter, F-keys, arrows, etc.
 
-  let typed = e.key.toUpperCase();
-  if (!/^[A-Z-]$/.test(typed)) return; // romaji uses A–Z and the dash key
+  let typed = e.key;
+  if (/[a-z]/i.test(typed)) typed = typed.toUpperCase(); // case-insensitive letters
+  if (!/^[A-Z]$/.test(typed) && !' ,.-'.includes(typed)) return;
+  if (typed === ' ') e.preventDefault(); // don't scroll the page
 
   const cur = units[unitIdx];
   if (!cur) return;
 
+  const animId = typed === ' ' ? 'SPACE' : typed;
   keystrokes++;
   const nb = curBuf + typed;
   const matches = cur.opts.filter(o => o.startsWith(nb));
@@ -1428,7 +1789,7 @@ document.addEventListener('keydown', e => {
   if (matches.length === 0) {
     // Wrong key
     mistakes++;
-    animKey(typed, false);
+    animKey(animId, false);
     flashSentence(false);
     renderSentence(true);
     setTimeout(() => renderSentence(false), 300);
@@ -1439,7 +1800,7 @@ document.addEventListener('keydown', e => {
   curBuf = nb;
   charCount++;
   document.getElementById('charCount').textContent = charCount;
-  animKey(typed, true);
+  animKey(animId, true);
 
   if (cur.opts.includes(curBuf)) {
     // Current kana finished
