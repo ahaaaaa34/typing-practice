@@ -787,8 +787,11 @@ const FINGER_LABEL = {
 
 // ── STATE ─────────────────────────────────────────────
 let elapsedSec, charCount, mistakes, keystrokes, sentencesDone;
-let sentIdx, pos, timerID, running;
+let sentIdx, timerID, running;
 let pool = [];
+let units = [];   // kana units of current sentence
+let unitIdx = 0;  // which unit we're on
+let curBuf = '';  // chars typed toward current unit
 
 // ── KEYBOARD BUILD ────────────────────────────────────
 function buildKeyboard() {
@@ -847,6 +850,71 @@ function buildFingerGuide() {
       <div class="hand-fingers">${rightFingers}</div>
       <div class="hand-label">右手</div>
     </div>`;
+}
+
+// ── ROMAJI INPUT ENGINE ───────────────────────────────
+// Display stays kunrei (SI/TI/TU/HU/ZI…), but input also accepts the
+// common alternative spellings (SHI/CHI/TSU/FU/JI/JU…). Matching works
+// per kana-unit: each unit holds a list of acceptable romaji spellings.
+const KMONO = {
+ 'あ':'A','い':'I','う':'U','え':'E','お':'O','か':'KA','き':'KI','く':'KU','け':'KE','こ':'KO',
+ 'が':'GA','ぎ':'GI','ぐ':'GU','げ':'GE','ご':'GO','さ':'SA','し':'SI','す':'SU','せ':'SE','そ':'SO',
+ 'ざ':'ZA','じ':'ZI','ず':'ZU','ぜ':'ZE','ぞ':'ZO','た':'TA','ち':'TI','つ':'TU','て':'TE','と':'TO',
+ 'だ':'DA','ぢ':'DI','づ':'DU','で':'DE','ど':'DO','な':'NA','に':'NI','ぬ':'NU','ね':'NE','の':'NO',
+ 'は':'HA','ひ':'HI','ふ':'HU','へ':'HE','ほ':'HO','ば':'BA','び':'BI','ぶ':'BU','べ':'BE','ぼ':'BO',
+ 'ぱ':'PA','ぴ':'PI','ぷ':'PU','ぺ':'PE','ぽ':'PO','ま':'MA','み':'MI','む':'MU','め':'ME','も':'MO',
+ 'や':'YA','ゆ':'YU','よ':'YO','ら':'RA','り':'RI','る':'RU','れ':'RE','ろ':'RO','わ':'WA','を':'WO',
+};
+const KYOUON = {
+ 'きゃ':'KYA','きゅ':'KYU','きょ':'KYO','ぎゃ':'GYA','ぎゅ':'GYU','ぎょ':'GYO',
+ 'しゃ':'SYA','しゅ':'SYU','しょ':'SYO','じゃ':'ZYA','じゅ':'ZYU','じょ':'ZYO',
+ 'ちゃ':'TYA','ちゅ':'TYU','ちょ':'TYO','にゃ':'NYA','にゅ':'NYU','にょ':'NYO',
+ 'ひゃ':'HYA','ひゅ':'HYU','ひょ':'HYO','びゃ':'BYA','びゅ':'BYU','びょ':'BYO',
+ 'ぴゃ':'PYA','ぴゅ':'PYU','ぴょ':'PYO','みゃ':'MYA','みゅ':'MYU','みょ':'MYO',
+ 'りゃ':'RYA','りゅ':'RYU','りょ':'RYO',
+};
+// Alternative spellings (primary first; primary equals the displayed kunrei).
+const KALT = {
+ 'し':['SI','SHI'],'じ':['ZI','JI'],'ち':['TI','CHI'],'つ':['TU','TSU'],'ふ':['HU','FU'],
+ 'しゃ':['SYA','SHA'],'しゅ':['SYU','SHU'],'しょ':['SYO','SHO'],
+ 'ちゃ':['TYA','CHA'],'ちゅ':['TYU','CHU'],'ちょ':['TYO','CHO'],
+ 'じゃ':['ZYA','JA','JYA'],'じゅ':['ZYU','JU','JYU'],'じょ':['ZYO','JO','JYO'],
+};
+function kanaOptions(kana){
+  if (KALT[kana]) return KALT[kana].slice();
+  if (KYOUON[kana]) return [KYOUON[kana]];
+  if (KMONO[kana]) return [KMONO[kana]];
+  return [kana];
+}
+function buildUnits(hira){
+  const s = hira.replace(/[。、]/g, '');
+  const out = [];
+  let i = 0, sokuon = false;
+  while (i < s.length){
+    const ch = s[i], pair = s.substr(i, 2);
+    if (ch === 'っ'){ sokuon = true; i++; continue; }
+    let opts;
+    if (ch === 'ん'){ opts = ['NN']; i++; }
+    else if (ch === 'ー'){ opts = ['-']; i++; }
+    else if (KYOUON[pair] || KALT[pair]){ opts = kanaOptions(pair); i += 2; }
+    else { opts = kanaOptions(ch); i++; }
+    if (sokuon){
+      // little っ doubles the first letter of whichever spelling is used
+      opts = opts.map(o => (o[0] && !'AIUEO'.includes(o[0])) ? o[0] + o : o);
+      sokuon = false;
+    }
+    out.push({ opts, primary: opts[0] });
+  }
+  return out;
+}
+// length of common prefix between the typed buffer and the primary spelling
+function primaryMatchLen(){
+  const cur = units[unitIdx];
+  if (!cur) return 0;
+  const P = cur.primary;
+  let k = 0;
+  while (k < curBuf.length && k < P.length && curBuf[k] === P[k]) k++;
+  return k;
 }
 
 // ── GAME LOGIC ────────────────────────────────────────
@@ -920,7 +988,9 @@ function loadSentence() {
     pool = shuffle([...SENTENCES]);
     sentIdx = 0;
   }
-  pos = 0;
+  units = buildUnits(currentSentence().hira);
+  unitIdx = 0;
+  curBuf = '';
 }
 
 function currentSentence() { return pool[sentIdx] || pool[0]; }
@@ -929,33 +999,45 @@ function updateUI() {
   const s = currentSentence();
   document.getElementById('kanjiText').textContent = s.kanji;
   document.getElementById('hiraText').textContent = s.hira;
-  renderRomaji(s.romaji, pos, false);
-  updateKeyHighlight(s.romaji, pos);
+  renderSentence(false);
+  highlightNext();
 }
 
-function renderRomaji(romaji, curPos, isError) {
-  const done = romaji.slice(0, curPos);
-  const cur  = romaji[curPos] ?? '';
-  const todo = romaji.slice(curPos + 1);
+// Renders the displayed (kunrei) romaji with done / cursor / todo coloring,
+// driven by completed units + how far the buffer matches the current primary.
+function renderSentence(isError) {
+  const doneUnits = units.slice(0, unitIdx).map(u => u.primary).join('');
+  const cur = units[unitIdx];
+  let curDone = '', cursorCh = '', curTodo = '';
+  if (cur) {
+    const P = cur.primary;
+    const k = primaryMatchLen();
+    curDone  = P.slice(0, k);
+    cursorCh = P[k] || '';
+    curTodo  = P.slice(k + 1);
+  }
+  const restTodo = units.slice(unitIdx + 1).map(u => u.primary).join('');
 
   document.getElementById('romajiText').innerHTML =
-    `<span class="r-done">${done}</span>` +
-    (cur ? `<span class="r-cursor${isError ? ' wrong' : ''}">${cur}</span>` : '') +
-    `<span class="r-todo">${todo}</span>`;
+    `<span class="r-done">${doneUnits}${curDone}</span>` +
+    (cursorCh ? `<span class="r-cursor${isError ? ' wrong' : ''}">${cursorCh}</span>` : '') +
+    `<span class="r-todo">${curTodo}${restTodo}</span>`;
 }
 
-function updateKeyHighlight(romaji, curPos) {
+// Highlights the next key / finger based on the current primary spelling.
+function highlightNext() {
   clearHighlights();
-  const ch = romaji[curPos];
+  const cur = units[unitIdx];
+  if (!cur) { redrawHands(null, null); return; }
+  const ch = cur.primary[primaryMatchLen()];
   if (!ch) { redrawHands(null, null); return; }
 
-  const keyId = ch === ' ' ? 'SPACE' : ch;
-  const keyEl = document.getElementById(`key-${keyId}`);
+  const keyEl = document.getElementById(`key-${ch}`);
   if (keyEl) keyEl.classList.add('next-key');
 
-  const finger = KEY_FINGER[keyId] || 'none';
+  const finger = KEY_FINGER[ch] || 'none';
   updateFingerInfo(ch, finger);
-  redrawHands(finger, keyId);
+  redrawHands(finger, ch);
 }
 
 function clearHighlights() {
@@ -978,39 +1060,47 @@ function updateFingerInfo(ch, finger) {
 document.addEventListener('keydown', e => {
   if (!running) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
-  if (e.key.length > 1 && e.key !== 'Enter') return; // ignore F-keys, etc.
+  if (e.key.length > 1) return; // ignore Enter, F-keys, arrows, etc.
 
-  const typed = e.key === ' ' ? ' ' : e.key.toUpperCase();
-  const s = currentSentence();
-  const expected = s.romaji[pos];
+  let typed = e.key.toUpperCase();
+  if (!/^[A-Z-]$/.test(typed)) return; // romaji uses A–Z and the dash key
 
-  if (!expected) return;
+  const cur = units[unitIdx];
+  if (!cur) return;
 
   keystrokes++;
+  const nb = curBuf + typed;
+  const matches = cur.opts.filter(o => o.startsWith(nb));
 
-  if (typed === expected) {
-    // Correct
-    animKey(typed === ' ' ? 'SPACE' : typed, true);
-    pos++;
-    charCount++;
-    document.getElementById('charCount').textContent = charCount;
+  if (matches.length === 0) {
+    // Wrong key
+    mistakes++;
+    animKey(typed, false);
+    flashSentence(false);
+    renderSentence(true);
+    setTimeout(() => renderSentence(false), 300);
+    return;
+  }
 
-    if (pos >= s.romaji.length) {
+  // Accepted keystroke
+  curBuf = nb;
+  charCount++;
+  document.getElementById('charCount').textContent = charCount;
+  animKey(typed, true);
+
+  if (cur.opts.includes(curBuf)) {
+    // Current kana finished
+    unitIdx++;
+    curBuf = '';
+    if (unitIdx >= units.length) {
       // Sentence complete
       sentencesDone++;
       sentIdx++;
       loadSentence();
       flashSentence(true);
     }
-    updateUI();
-  } else {
-    // Wrong
-    mistakes++;
-    animKey(typed === ' ' ? 'SPACE' : typed, false);
-    flashSentence(false);
-    renderRomaji(s.romaji, pos, true);
-    setTimeout(() => renderRomaji(s.romaji, pos, false), 300);
   }
+  updateUI();
 });
 
 function animKey(keyId, correct) {
