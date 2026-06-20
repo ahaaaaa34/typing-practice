@@ -5,233 +5,266 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>タイピング練習 - 日本語入力</title>
 <style>
+:root {
+  --bg1: #eef1f9; --bg2: #e4e9f5;
+  --card: #ffffff;
+  --ink: #2b2f3a; --muted: #8b93a7; --faint: #c2c8d6;
+  --primary: #4f6bed; --primary-d: #3b53c4;
+  --accent: #ef4d4d; --accent-d: #d23b3b;
+  --ok: #34c27a;
+  --key: #eef1f6; --key-edge: #c4cad8; --key-ink: #4a5163;
+  --radius: 16px;
+  --sh-sm: 0 1px 3px rgba(30,40,80,.08);
+  --sh-md: 0 6px 20px rgba(30,40,80,.10);
+  --sh-lg: 0 18px 50px rgba(20,30,70,.28);
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', 'Yu Gothic', sans-serif;
-  background: #eef2f7;
+  font-family: system-ui, -apple-system, 'Hiragino Kaku Gothic ProN',
+               'Hiragino Sans', 'Yu Gothic', Meiryo, sans-serif;
+  color: var(--ink);
+  background: linear-gradient(160deg, var(--bg1), var(--bg2));
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  display: flex; flex-direction: column;
   user-select: none;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ── HEADER ── */
 header {
-  background: #6b82a8;
+  background: linear-gradient(120deg, #41538f, #5468c0);
   color: white;
-  padding: 10px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-  flex-shrink: 0;
+  padding: 12px clamp(16px, 4vw, 32px);
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 4px 18px rgba(40,55,120,.28);
+  position: sticky; top: 0; z-index: 50; flex-shrink: 0;
 }
 .hdr-left { display: flex; align-items: baseline; gap: 10px; }
-.hdr-title { font-size: 18px; font-weight: bold; }
-.hdr-sub { font-size: 13px; opacity: 0.8; }
-.hdr-right { display: flex; align-items: center; gap: 12px; }
-.elapsed-label { font-size: 13px; }
-.elapsed-text { font-size: 16px; font-weight: bold; min-width: 90px; text-align: right; }
-.btn-end {
-  background: #e74c3c; color: white; border: none;
-  border-radius: 20px; padding: 6px 18px;
-  cursor: pointer; font-size: 14px; font-weight: bold;
+.hdr-title { font-size: 18px; font-weight: 800; letter-spacing: .04em; display: flex; align-items: center; gap: 8px; }
+.hdr-title::before { content: '⌨'; font-size: 20px; }
+.hdr-sub { font-size: 12px; opacity: .75; letter-spacing: .08em; }
+.hdr-right { display: flex; align-items: center; gap: 14px; }
+.elapsed-label { font-size: 12px; opacity: .8; letter-spacing: .06em; }
+.elapsed-text {
+  font-size: 17px; font-weight: 800; min-width: 92px; text-align: right;
+  font-variant-numeric: tabular-nums; letter-spacing: .02em;
 }
-.btn-end:hover { background: #c0392b; }
+.btn-end {
+  background: rgba(255,255,255,.14); color: white;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 999px; padding: 7px 18px;
+  cursor: pointer; font-size: 13px; font-weight: 700;
+  transition: background .15s, transform .1s;
+}
+.btn-end:hover { background: rgba(255,255,255,.26); }
+.btn-end:active { transform: scale(.96); }
 
 /* ── GAME AREA ── */
 .game-area {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; padding: 20px 16px; gap: 16px;
+  flex: 1; width: 100%; max-width: 920px; margin: 0 auto;
+  display: flex; flex-direction: column; align-items: center;
+  padding: clamp(16px, 3vw, 28px) 16px; gap: 18px;
 }
 
 /* Score */
 .score-box {
-  display: flex; align-items: stretch;
-  background: white; border-radius: 8px; overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: inline-flex; align-items: center; gap: 12px;
+  background: var(--card); border-radius: 999px;
+  padding: 8px 10px 8px 20px; box-shadow: var(--sh-sm);
 }
-.score-label {
-  background: #6b82a8; color: white;
-  padding: 10px 18px; font-size: 14px; font-weight: bold;
-  display: flex; align-items: center;
-}
+.score-label { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
 .score-value {
-  padding: 10px 24px; font-size: 26px; font-weight: bold;
-  color: #e67e22; min-width: 80px; text-align: center;
+  font-size: 22px; font-weight: 800; color: var(--primary);
+  min-width: 64px; text-align: center; font-variant-numeric: tabular-nums;
+  background: #eef2ff; border-radius: 999px; padding: 4px 16px;
 }
 
 /* Sentence */
 .sentence-box {
-  text-align: center; background: white; border-radius: 12px;
-  padding: 22px 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  min-width: 520px; max-width: 800px; width: 100%;
+  text-align: center; background: var(--card); border-radius: var(--radius);
+  padding: 26px 40px; box-shadow: var(--sh-md);
+  width: 100%; max-width: 760px;
+  transition: box-shadow .2s, background .2s;
 }
-.kanji-text { font-size: 30px; color: #2196f3; margin-bottom: 8px; line-height: 1.5; }
-.hira-text { font-size: 15px; color: #666; margin-bottom: 6px; }
+.kanji-text { font-size: clamp(24px, 3.4vw, 32px); font-weight: 700; color: var(--ink); margin-bottom: 10px; line-height: 1.5; }
+.hira-text { font-size: 14px; color: var(--muted); margin-bottom: 12px; letter-spacing: .06em; }
 .romaji-text {
-  font-size: 20px; font-weight: bold; letter-spacing: 1px;
-  font-family: 'Courier New', Courier, monospace; line-height: 2;
-  min-height: 44px; word-break: break-all;
+  font-size: 22px; font-weight: 700; letter-spacing: 2px;
+  font-family: 'SF Mono', 'Roboto Mono', 'Courier New', monospace; line-height: 1.9;
+  min-height: 42px; word-break: break-all;
 }
-.r-done { color: #bbb; }
+.r-done { color: var(--faint); }
 .r-cursor {
-  color: #1565c0; background: #bbdefb; border-radius: 3px; padding: 0 2px;
-  animation: blink-bg 1s step-end infinite;
+  color: white; background: var(--primary);
+  border-radius: 5px; padding: 1px 3px; box-shadow: 0 2px 8px rgba(79,107,237,.4);
+  animation: blink-bg 1.1s ease-in-out infinite;
 }
-.r-cursor.wrong { background: #ffcdd2; color: #c62828; animation: shake 0.3s ease; }
-@keyframes blink-bg { 50% { background: #90caf9; } }
+.r-cursor.wrong { background: var(--accent); box-shadow: 0 2px 8px rgba(239,77,77,.45); animation: shake .3s ease; }
+@keyframes blink-bg { 50% { background: var(--primary-d); } }
 @keyframes shake {
   0%,100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
   75% { transform: translateX(4px); }
 }
-.r-todo { color: #333; }
+.r-todo { color: var(--ink); }
 
 /* Keyboard */
 .keyboard-wrap {
-  background: #d4d8e1;
-  border-radius: 14px;
-  padding: 14px 16px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
-  position: relative;
-  overflow: visible;
+  background: linear-gradient(150deg, #dfe4ee, #d2d8e6);
+  border-radius: 18px;
+  padding: 16px; box-shadow: var(--sh-md), inset 0 1px 0 rgba(255,255,255,.6);
+  position: relative; overflow: visible;
 }
-.key-row {
-  display: flex; gap: 5px; margin-bottom: 5px;
-  justify-content: center;
-}
+.key-row { display: flex; gap: 6px; margin-bottom: 6px; justify-content: center; }
 .key-row:last-child { margin-bottom: 0; }
 .key {
-  height: 48px; min-width: 48px; border-radius: 7px;
+  height: 46px; min-width: 46px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: bold;
+  font-size: 13px; font-weight: 700; color: var(--key-ink);
   cursor: default;
-  box-shadow: 0 3px 0 rgba(0,0,0,0.3);
-  transition: transform 0.08s, box-shadow 0.08s, filter 0.1s;
+  background: linear-gradient(180deg, #fbfcfe, var(--key));
+  box-shadow: 0 2px 0 var(--key-edge), 0 3px 5px rgba(40,55,100,.12);
+  transition: transform .08s, box-shadow .08s, filter .1s, color .1s;
   position: relative; padding: 0 8px;
 }
-.key.pressed { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
+.key.pressed { transform: translateY(2px); box-shadow: 0 0 0 var(--key-edge), 0 1px 3px rgba(40,55,100,.15); }
 .key.next-key {
-  outline: 3px solid rgba(255,255,255,0.9);
-  outline-offset: 1px;
-  animation: key-pulse 0.6s ease-in-out infinite alternate;
-  z-index: 2;
+  color: var(--accent-d); z-index: 2;
+  background: linear-gradient(180deg, #fff, #ffeceb);
+  animation: key-pulse .8s ease-in-out infinite alternate;
 }
 @keyframes key-pulse {
-  from { filter: brightness(1); }
-  to { filter: brightness(1.35) saturate(1.2); }
+  from { box-shadow: 0 2px 0 var(--key-edge), 0 0 0 2.5px var(--accent), 0 0 7px 1px rgba(239,77,77,.35); }
+  to   { box-shadow: 0 2px 0 var(--key-edge), 0 0 0 2.5px var(--accent), 0 0 18px 5px rgba(239,77,77,.65); }
 }
 .key.home-pos::after {
-  content: '';
-  position: absolute; bottom: 5px;
-  width: 8px; height: 3px;
-  background: rgba(255,255,255,0.6); border-radius: 2px;
+  content: ''; position: absolute; bottom: 6px;
+  width: 9px; height: 3px; background: var(--key-edge); border-radius: 2px;
 }
 
-/* All keys same neutral color */
-.key { background: #c8ccd8; color: #333; }
-
 /* Key size variants */
-.key-w15 { min-width: 72px; }
-.key-w20 { min-width: 96px; }
-.key-sp { min-width: 340px; }
+.key-w15 { min-width: 70px; }
+.key-w20 { min-width: 94px; }
+.key-sp  { min-width: 320px; }
 
 /* ── FINGER GUIDE ── */
 .finger-guide {
-  display: flex; align-items: center; gap: 24px;
-  background: white; border-radius: 12px;
-  padding: 14px 24px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex; align-items: center; justify-content: center; gap: clamp(12px, 3vw, 30px);
+  background: var(--card); border-radius: var(--radius);
+  padding: 16px 24px; box-shadow: var(--sh-md); width: 100%; max-width: 760px;
 }
-.hand-section { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.hand-label { font-size: 13px; font-weight: bold; color: #555; }
-.hand-fingers { display: flex; gap: 4px; align-items: flex-end; }
-.fng-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.hand-section { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.hand-label { font-size: 12px; font-weight: 800; color: var(--muted); letter-spacing: .08em; }
+.hand-fingers { display: flex; gap: 5px; align-items: flex-end; }
+.fng-col { display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .fng-bar {
-  width: 32px; border-radius: 14px 14px 4px 4px;
-  background: #ccc;
-  opacity: 0.4; transition: background 0.15s, opacity 0.15s, transform 0.15s;
+  width: 30px; border-radius: 15px 15px 5px 5px;
+  background: linear-gradient(180deg, #e6e9f1, #d3d9e6);
+  opacity: .55; transition: background .15s, opacity .15s, transform .15s, box-shadow .15s;
 }
-.fng-bar.active { background: #e74c3c; opacity: 1; transform: translateY(-5px); }
-.fng-name { font-size: 9px; color: #777; text-align: center; line-height: 1.3; }
+.fng-bar.active {
+  background: linear-gradient(180deg, #ff6a6a, var(--accent));
+  opacity: 1; transform: translateY(-6px);
+  box-shadow: 0 6px 14px rgba(239,77,77,.45);
+}
+.fng-name { font-size: 9px; color: var(--muted); text-align: center; line-height: 1.3; }
 
 /* Heights per finger (pinky shortest, middle tallest) */
-.fng-lp .fng-bar { height: 44px; }
-.fng-lr .fng-bar { height: 56px; }
-.fng-lm .fng-bar { height: 64px; }
-.fng-li .fng-bar { height: 56px; }
-.fng-ri .fng-bar { height: 56px; }
-.fng-rm .fng-bar { height: 64px; }
-.fng-rr .fng-bar { height: 56px; }
-.fng-rp .fng-bar { height: 44px; }
-.fng-th .fng-bar { height: 36px; border-radius: 6px; width: 36px; }
+.fng-lp .fng-bar { height: 42px; }
+.fng-lr .fng-bar { height: 54px; }
+.fng-lm .fng-bar { height: 62px; }
+.fng-li .fng-bar { height: 54px; }
+.fng-ri .fng-bar { height: 54px; }
+.fng-rm .fng-bar { height: 62px; }
+.fng-rr .fng-bar { height: 54px; }
+.fng-rp .fng-bar { height: 42px; }
+.fng-th .fng-bar { height: 34px; border-radius: 7px; width: 34px; }
 
 /* Center example sentence (between the hands) */
 .center-sentence {
-  flex: 1; min-width: 300px; max-width: 460px;
-  text-align: center; padding: 0 16px;
+  flex: 1; min-width: 240px; max-width: 460px;
+  text-align: center; padding: 0 14px;
+  border-left: 1px solid #eef0f6; border-right: 1px solid #eef0f6;
 }
-.cs-kanji { font-size: 20px; color: #2196f3; margin-bottom: 4px; line-height: 1.4; }
-.cs-hira  { font-size: 12px; color: #888; margin-bottom: 6px; }
+.cs-kanji { font-size: 19px; font-weight: 700; color: var(--ink); margin-bottom: 5px; line-height: 1.4; }
+.cs-hira  { font-size: 11px; color: var(--muted); margin-bottom: 7px; letter-spacing: .04em; }
 .cs-romaji {
-  font-size: 16px; font-weight: bold; letter-spacing: 1px;
-  font-family: 'Courier New', Courier, monospace; line-height: 1.7;
+  font-size: 16px; font-weight: 700; letter-spacing: 1.5px;
+  font-family: 'SF Mono', 'Roboto Mono', 'Courier New', monospace; line-height: 1.6;
   word-break: break-all;
 }
 
 /* ── OVERLAYS ── */
 .overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  position: fixed; inset: 0; background: rgba(28,34,60,.5);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center; z-index: 100;
+  animation: ov-in .25s ease;
 }
+@keyframes ov-in { from { opacity: 0; } to { opacity: 1; } }
 .overlay.hidden { display: none; }
 .ov-box {
-  background: white; border-radius: 18px; padding: 40px 56px;
-  text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-  max-width: 500px; width: 90%;
+  background: var(--card); border-radius: 22px; padding: clamp(28px, 5vw, 44px) clamp(24px, 6vw, 56px);
+  text-align: center; box-shadow: var(--sh-lg);
+  max-width: 520px; width: 90%;
+  animation: pop-in .3s cubic-bezier(.2,.9,.3,1.2);
 }
-.ov-title { font-size: 26px; font-weight: bold; color: #333; margin-bottom: 14px; }
-.ov-desc { color: #666; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+@keyframes pop-in { from { transform: translateY(14px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+.ov-title { font-size: 26px; font-weight: 800; color: var(--ink); margin-bottom: 12px; }
+.ov-desc { color: var(--muted); font-size: 14px; margin-bottom: 22px; line-height: 1.7; }
+
+/* Home-position legend */
 .home-guide {
-  background: #f4f8ff; border-radius: 10px; padding: 16px;
-  text-align: left; font-size: 13px; color: #444; margin-bottom: 20px; line-height: 1.9;
+  background: #f5f7fe; border: 1px solid #e7ebf8; border-radius: 14px;
+  padding: 18px; margin-bottom: 22px;
 }
-.home-guide strong { display: block; margin-bottom: 4px; color: #2196f3; font-size: 14px; }
-.color-chip {
-  display: inline-block; width: 12px; height: 12px;
-  border-radius: 3px; vertical-align: middle; margin-right: 4px;
+.home-guide strong { display: block; margin-bottom: 12px; color: var(--primary-d); font-size: 13px; letter-spacing: .04em; }
+.home-keys { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.hk-group { display: flex; gap: 5px; }
+.hk { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.hk kbd {
+  font-family: 'SF Mono','Roboto Mono',monospace; font-size: 13px; font-weight: 700;
+  background: linear-gradient(180deg,#fff,var(--key)); color: var(--key-ink);
+  border-radius: 7px; box-shadow: 0 2px 0 var(--key-edge); padding: 7px 0; width: 30px;
 }
-.result-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 12px; margin: 20px 0;
-}
-.stat-card { background: #f5f5f5; border-radius: 10px; padding: 14px 10px; }
-.stat-label { font-size: 12px; color: #999; margin-bottom: 4px; }
-.stat-val { font-size: 28px; font-weight: bold; color: #333; }
+.hk.bump kbd { box-shadow: 0 2px 0 var(--key-edge), inset 0 -6px 0 -4px var(--accent); }
+.hk small { font-size: 9px; color: var(--muted); }
+.home-note { font-size: 12px; color: var(--muted); margin-top: 12px; }
+
+.result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 22px 0; }
+.stat-card { background: #f5f7fb; border-radius: 14px; padding: 16px 10px; }
+.stat-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; letter-spacing: .04em; }
+.stat-val { font-size: 28px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
 .btn-primary {
-  background: #2196f3; color: white; border: none;
-  border-radius: 10px; padding: 14px 48px;
-  font-size: 18px; font-weight: bold; cursor: pointer;
-  margin-top: 8px; transition: background 0.2s;
+  background: linear-gradient(180deg, var(--primary), var(--primary-d)); color: white; border: none;
+  border-radius: 13px; padding: 14px 48px;
+  font-size: 17px; font-weight: 800; cursor: pointer;
+  box-shadow: 0 8px 20px rgba(79,107,237,.35); transition: transform .1s, box-shadow .2s, filter .15s;
 }
-.btn-primary:hover { background: #1565c0; }
-.btn-green { background: #4caf50; }
-.btn-green:hover { background: #388e3c; }
+.btn-primary:hover { filter: brightness(1.06); box-shadow: 0 10px 26px rgba(79,107,237,.45); }
+.btn-primary:active { transform: translateY(2px); }
+.btn-green { background: linear-gradient(180deg, #44d488, #2faf6a); box-shadow: 0 8px 20px rgba(52,194,122,.35); }
+.btn-green:hover { box-shadow: 0 10px 26px rgba(52,194,122,.45); }
 
-/* Mistake flash overlay on sentence box */
-.sentence-box.error-flash { animation: err-flash 0.3s ease; }
+/* Mistake / correct flash on sentence box */
+.sentence-box.error-flash { animation: err-flash .35s ease; }
 @keyframes err-flash {
-  0%,100% { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-  50% { box-shadow: 0 0 0 4px rgba(231,76,60,0.4); }
+  0%,100% { box-shadow: var(--sh-md); }
+  50% { box-shadow: 0 0 0 4px rgba(239,77,77,.4), var(--sh-md); }
+}
+.sentence-box.ok-flash { animation: ok-flash .3s ease; }
+@keyframes ok-flash {
+  0%,100% { background: var(--card); }
+  50% { background: #e9faf1; }
 }
 
-/* Correct flash */
-.sentence-box.ok-flash { animation: ok-flash 0.25s ease; }
-@keyframes ok-flash {
-  0%,100% { background: white; }
-  50% { background: #e8f5e9; }
+@media (max-width: 560px) {
+  .key { height: 38px; min-width: 36px; font-size: 11px; border-radius: 7px; }
+  .key-sp { min-width: 200px; }
+  .key-w15 { min-width: 54px; } .key-w20 { min-width: 72px; }
+  .center-sentence { display: none; }
+  .sentence-box { padding: 20px; }
 }
 </style>
 </head>
@@ -271,20 +304,25 @@ header {
 <!-- START OVERLAY -->
 <div class="overlay" id="startScreen">
   <div class="ov-box">
-    <div class="ov-title">🎹 タイピング練習</div>
-    <p class="ov-desc">ホームポジションを意識しながら日本語をタイピング！<br>キーの色は使う指を表しています。</p>
+    <div class="ov-title">日本語タイピング練習</div>
+    <p class="ov-desc">ホームポジションを意識しながら日本語を入力しよう。<br>次に押すキーと使う指が赤く光ります。</p>
     <div class="home-guide">
       <strong>ホームポジション（指の基本位置）</strong>
-      <span class="color-chip" style="background:#4472C4"></span>左小指 → <kbd>A</kbd> &nbsp;
-      <span class="color-chip" style="background:#70AD47"></span>左薬指 → <kbd>S</kbd> &nbsp;
-      <span class="color-chip" style="background:#FFC000"></span>左中指 → <kbd>D</kbd><br>
-      <span class="color-chip" style="background:#E74C3C"></span>左人差し指 → <kbd>F</kbd> &nbsp;&nbsp;
-      <span class="color-chip" style="background:#E74C3C"></span>右人差し指 → <kbd>J</kbd><br>
-      <span class="color-chip" style="background:#FFC000"></span>右中指 → <kbd>K</kbd> &nbsp;
-      <span class="color-chip" style="background:#70AD47"></span>右薬指 → <kbd>L</kbd> &nbsp;
-      <span class="color-chip" style="background:#4472C4"></span>右小指 → <kbd>;</kbd><br>
-      <span class="color-chip" style="background:#8e44ad"></span>両親指 → スペースキー<br><br>
-      <em>💡 FとJには突起があります。目を閉じても確認できます！</em>
+      <div class="home-keys">
+        <div class="hk-group">
+          <div class="hk"><kbd>A</kbd><small>小指</small></div>
+          <div class="hk"><kbd>S</kbd><small>薬指</small></div>
+          <div class="hk"><kbd>D</kbd><small>中指</small></div>
+          <div class="hk bump"><kbd>F</kbd><small>人差し</small></div>
+        </div>
+        <div class="hk-group">
+          <div class="hk bump"><kbd>J</kbd><small>人差し</small></div>
+          <div class="hk"><kbd>K</kbd><small>中指</small></div>
+          <div class="hk"><kbd>L</kbd><small>薬指</small></div>
+          <div class="hk"><kbd>;</kbd><small>小指</small></div>
+        </div>
+      </div>
+      <div class="home-note">💡 <kbd style="padding:1px 5px">F</kbd> と <kbd style="padding:1px 5px">J</kbd> の突起で、見なくても指の位置がわかります。</div>
     </div>
     <button class="btn-primary btn-green" onclick="startGame()">スタート！</button>
   </div>
@@ -737,6 +775,313 @@ const SENTENCES = [
   { kanji: '五月の風が爽やかに吹きます。', hira: 'ごがつのかぜがさわやかにふきます。', romaji: 'GOGATUNOKAZEGASAWAYAKANIHUKIMASU' },
   { kanji: '具体的な例を挙げて説明します。', hira: 'ぐたいてきなれいをあげてせつめいします。', romaji: 'GUTAITEKINAREIWOAGETESETUMEISIMASU' },
   { kanji: '芸術作品を間近で眺めます。', hira: 'げいじゅつさくひんをまぢかでながめます。', romaji: 'GEIZYUTUSAKUHINNWOMADIKADENAGAMEMASU' },
+
+  // ── 追加300文（その2） ──
+  { kanji: '部長に企画書を見せます。', hira: 'ぶちょうにきかくしょをみせます。', romaji: 'BUTYOUNIKIKAKUSYOWOMISEMASU' },
+  { kanji: '会議室の予約を取ります。', hira: 'かいぎしつのよやくをとります。', romaji: 'KAIGISITUNOYOYAKUWOTORIMASU' },
+  { kanji: '得意先に電話をかけます。', hira: 'とくいさきにでんわをかけます。', romaji: 'TOKUISAKINIDENNWAWOKAKEMASU' },
+  { kanji: '書類に判子を押します。', hira: 'しょるいにはんこをおします。', romaji: 'SYORUINIHANNKOWOOSIMASU' },
+  { kanji: '新しい企画を提案します。', hira: 'あたらしいきかくをていあんします。', romaji: 'ATARASIIKIKAKUWOTEIANNSIMASU' },
+  { kanji: '予算をみんなで検討します。', hira: 'よさんをみんなでけんとうします。', romaji: 'YOSANNWOMINNNADEKENNTOUSIMASU' },
+  { kanji: '議事録を素早くまとめます。', hira: 'ぎじろくをすばやくまとめます。', romaji: 'GIZIROKUWOSUBAYAKUMATOMEMASU' },
+  { kanji: '在庫を倉庫で数えます。', hira: 'ざいこをそうこでかぞえます。', romaji: 'ZAIKOWOSOUKODEKAZOEMASU' },
+  { kanji: '部品を工場へ発送します。', hira: 'ぶひんをこうじょうへはっそうします。', romaji: 'BUHINNWOKOUZYOUHEHASSOUSIMASU' },
+  { kanji: '面接で長所を伝えます。', hira: 'めんせつでちょうしょをつたえます。', romaji: 'MENNSETUDETYOUSYOWOTUTAEMASU' },
+  { kanji: '給料日を心待ちにします。', hira: 'きゅうりょうびをこころまちにします。', romaji: 'KYUURYOUBIWOKOKOROMATINISIMASU' },
+  { kanji: '出張で大阪へ行きます。', hira: 'しゅっちょうでおおさかへいきます。', romaji: 'SYUTTYOUDEOOSAKAHEIKIMASU' },
+  { kanji: '名簿を五十音順に並べます。', hira: 'めいぼをごじゅうおんじゅんにならべます。', romaji: 'MEIBOWOGOZYUUONNZYUNNNINARABEMASU' },
+  { kanji: '伝票を一枚ずつ確認します。', hira: 'でんぴょうをいちまいずつかくにんします。', romaji: 'DENNPYOUWOITIMAIZUTUKAKUNINNSIMASU' },
+  { kanji: '受付で来客を案内します。', hira: 'うけつけでらいきゃくをあんないします。', romaji: 'UKETUKEDERAIKYAKUWOANNNAISIMASU' },
+  { kanji: '玉ねぎを薄く切ります。', hira: 'たまねぎをうすくきります。', romaji: 'TAMANEGIWOUSUKUKIRIMASU' },
+  { kanji: '豚肉を強火で炒めます。', hira: 'ぶたにくをつよびでいためます。', romaji: 'BUTANIKUWOTUYOBIDEITAMEMASU' },
+  { kanji: '大根をゆっくり煮ます。', hira: 'だいこんをゆっくりにます。', romaji: 'DAIKONNWOYUKKURINIMASU' },
+  { kanji: '林檎の皮を剥きます。', hira: 'りんごのかわをむきます。', romaji: 'RINNGONOKAWAWOMUKIMASU' },
+  { kanji: '生地をよくこねて寝かせます。', hira: 'きじをよくこねてねかせます。', romaji: 'KIZIWOYOKUKONETENEKASEMASU' },
+  { kanji: '鶏肉に下味を付けます。', hira: 'とりにくにしたあじをつけます。', romaji: 'TORINIKUNISITAAZIWOTUKEMASU' },
+  { kanji: '胡椒を少し振りかけます。', hira: 'こしょうをすこしふりかけます。', romaji: 'KOSYOUWOSUKOSIHURIKAKEMASU' },
+  { kanji: '餅を網でこんがり焼きます。', hira: 'もちをあみでこんがりやきます。', romaji: 'MOTIWOAMIDEKONNGARIYAKIMASU' },
+  { kanji: '葡萄を房から外します。', hira: 'ぶどうをふさからはずします。', romaji: 'BUDOUWOHUSAKARAHAZUSIMASU' },
+  { kanji: '味付けを少し濃くします。', hira: 'あじつけをすこしこくします。', romaji: 'AZITUKEWOSUKOSIKOKUSIMASU' },
+  { kanji: '豆腐を四角に切り分けます。', hira: 'とうふをしかくにきりわけます。', romaji: 'TOUHUWOSIKAKUNIKIRIWAKEMASU' },
+  { kanji: '蕎麦をたっぷりの湯で茹でます。', hira: 'そばをたっぷりのゆでゆでます。', romaji: 'SOBAWOTAPPURINOYUDEYUDEMASU' },
+  { kanji: '鍋の灰汁を丁寧に取ります。', hira: 'なべのあくをていねいにとります。', romaji: 'NABENOAKUWOTEINEINITORIMASU' },
+  { kanji: '焦げないように混ぜ続けます。', hira: 'こげないようにまぜつづけます。', romaji: 'KOGENAIYOUNIMAZETUDUKEMASU' },
+  { kanji: '弁当に彩りを添えます。', hira: 'べんとうにいろどりをそえます。', romaji: 'BENNTOUNIIRODORIWOSOEMASU' },
+  { kanji: '準備運動で体をほぐします。', hira: 'じゅんびうんどうでからだをほぐします。', romaji: 'ZYUNNBIUNNDOUDEKARADAWOHOGUSIMASU' },
+  { kanji: '全力でゴールまで走ります。', hira: 'ぜんりょくでごーるまではしります。', romaji: 'ZENNRYOKUDEGO-RUMADEHASIRIMASU' },
+  { kanji: '縄跳びを百回続けます。', hira: 'なわとびをひゃっかいつづけます。', romaji: 'NAWATOBIWOHYAKKAITUDUKEMASU' },
+  { kanji: '鉄棒で前回りをします。', hira: 'てつぼうでまえまわりをします。', romaji: 'TETUBOUDEMAEMAWARIWOSIMASU' },
+  { kanji: '水泳で息継ぎを覚えます。', hira: 'すいえいでいきつぎをおぼえます。', romaji: 'SUIEIDEIKITUGIWOOBOEMASU' },
+  { kanji: '球を遠くまで投げます。', hira: 'たまをとおくまでなげます。', romaji: 'TAMAWOTOOKUMADENAGEMASU' },
+  { kanji: '相手の動きをよく見ます。', hira: 'あいてのうごきをよくみます。', romaji: 'AITENOUGOKIWOYOKUMIMASU' },
+  { kanji: '柔軟体操で筋を伸ばします。', hira: 'じゅうなんたいそうですじをのばします。', romaji: 'ZYUUNANNTAISOUDESUZIWONOBASIMASU' },
+  { kanji: '坂道を全速力で登ります。', hira: 'さかみちをぜんそくりょくでのぼります。', romaji: 'SAKAMITIWOZENNSOKURYOKUDENOBORIMASU' },
+  { kanji: '優勝旗を高く掲げます。', hira: 'ゆうしょうきをたかくかかげます。', romaji: 'YUUSYOUKIWOTAKAKUKAKAGEMASU' },
+  { kanji: '汗を拭いて水分を取ります。', hira: 'あせをふいてすいぶんをとります。', romaji: 'ASEWOHUITESUIBUNNWOTORIMASU' },
+  { kanji: '応援団が大声で叫びます。', hira: 'おうえんだんがおおごえでさけびます。', romaji: 'OUENNDANNGAOOGOEDESAKEBIMASU' },
+  { kanji: 'boxを蹴って…', hira: 'けってだめ', romaji: 'KETTEDAME' },
+  { kanji: '号砲が鳴って一斉に出ます。', hira: 'ごうほうがなっていっせいにでます。', romaji: 'GOUHOUGANATTEISSEINIDEMASU' },
+  { kanji: '自転車で土手を走ります。', hira: 'じてんしゃでどてをはしります。', romaji: 'ZITENNSYADEDOTEWOHASIRIMASU' },
+  { kanji: '太鼓を力強く叩きます。', hira: 'たいこをちからづよくたたきます。', romaji: 'TAIKOWOTIKARADUYOKUTATAKIMASU' },
+  { kanji: '笛を吹いて合図を送ります。', hira: 'ふえをふいてあいずをおくります。', romaji: 'HUEWOHUITEAIZUWOOKURIMASU' },
+  { kanji: '鍵盤を軽やかに弾きます。', hira: 'けんばんをかろやかにひきます。', romaji: 'KENNBANNWOKAROYAKANIHIKIMASU' },
+  { kanji: '歌詞をゆっくり口ずさみます。', hira: 'かしをゆっくりくちずさみます。', romaji: 'KASIWOYUKKURIKUTIZUSAMIMASU' },
+  { kanji: '弦をそっと爪弾きます。', hira: 'げんをそっとつまびきます。', romaji: 'GENNWOSOTTOTUMABIKIMASU' },
+  { kanji: '指揮者が棒を振ります。', hira: 'しきしゃがぼうをふります。', romaji: 'SIKISYAGABOUWOHURIMASU' },
+  { kanji: '低い音を長く響かせます。', hira: 'ひくいおとをながくひびかせます。', romaji: 'HIKUIOTOWONAGAKUHIBIKASEMASU' },
+  { kanji: '童謡を子供と歌います。', hira: 'どうようをこどもとうたいます。', romaji: 'DOUYOUWOKODOMOTOUTAIMASU' },
+  { kanji: '美しい旋律に聴き入ります。', hira: 'うつくしいせんりつにききいります。', romaji: 'UTUKUSIISENNRITUNIKIKIIRIMASU' },
+  { kanji: '合奏で息を合わせます。', hira: 'がっそうでいきをあわせます。', romaji: 'GASSOUDEIKIWOAWASEMASU' },
+  { kanji: '満月が静かに昇ります。', hira: 'まんげつがしずかにのぼります。', romaji: 'MANNGETUGASIZUKANINOBORIMASU' },
+  { kanji: '北極星を頼りに進みます。', hira: 'ほっきょくせいをたよりにすすみます。', romaji: 'HOKKYOKUSEIWOTAYORINISUSUMIMASU' },
+  { kanji: '稲妻が夜空を裂きます。', hira: 'いなずまがよぞらをさきます。', romaji: 'INAZUMAGAYOZORAWOSAKIMASU' },
+  { kanji: '銀河が帯のように広がります。', hira: 'ぎんががおびのようにひろがります。', romaji: 'GINNGAGAOBINOYOUNIHIROGARIMASU' },
+  { kanji: '朝露が葉先で光ります。', hira: 'あさつゆがはさきでひかります。', romaji: 'ASATUYUGAHASAKIDEHIKARIMASU' },
+  { kanji: '地平線に太陽が沈みます。', hira: 'ちへいせんにたいようがしずみます。', romaji: 'TIHEISENNNITAIYOUGASIZUMIMASU' },
+  { kanji: '流れ星に願いを込めます。', hira: 'ながれぼしにねがいをこめます。', romaji: 'NAGAREBOSININEGAIWOKOMEMASU' },
+  { kanji: '霜が屋根を白く覆います。', hira: 'しもがやねをしろくおおいます。', romaji: 'SIMOGAYANEWOSIROKUOOIMASU' },
+  { kanji: '海底に珊瑚が広がります。', hira: 'かいていにさんごがひろがります。', romaji: 'KAITEINISANNGOGAHIROGARIMASU' },
+  { kanji: '火山が煙を噴き上げます。', hira: 'かざんがけむりをふきあげます。', romaji: 'KAZANNGAKEMURIWOHUKIAGEMASU' },
+  { kanji: '子犬が元気に駆け回ります。', hira: 'こいぬがげんきにかけまわります。', romaji: 'KOINUGAGENNKINIKAKEMAWARIMASU' },
+  { kanji: '蜂が花から花へ飛びます。', hira: 'はちがはなからはなへとびます。', romaji: 'HATIGAHANAKARAHANAHETOBIMASU' },
+  { kanji: '亀がのんびり甲羅を干します。', hira: 'かめがのんびりこうらをほします。', romaji: 'KAMEGANONNBIRIKOURAWOHOSIMASU' },
+  { kanji: '栗鼠が木の実を蓄えます。', hira: 'りすがきのみをたくわえます。', romaji: 'RISUGAKINOMIWOTAKUWAEMASU' },
+  { kanji: '蛇が草むらに身を隠します。', hira: 'へびがくさむらにみをかくします。', romaji: 'HEBIGAKUSAMURANIMIWOKAKUSIMASU' },
+  { kanji: '梟が枝の上で見張ります。', hira: 'ふくろうがえだのうえでみはります。', romaji: 'HUKUROUGAEDANOUEDEMIHARIMASU' },
+  { kanji: '蟻が餌を巣まで運びます。', hira: 'ありがえさをすまではこびます。', romaji: 'ARIGAESAWOSUMADEHAKOBIMASU' },
+  { kanji: '鯨が大きく潮を吹きます。', hira: 'くじらがおおきくしおをふきます。', romaji: 'KUZIRAGAOOKIKUSIOWOHUKIMASU' },
+  { kanji: '狸が落ち葉に化けます。', hira: 'たぬきがおちばにばけます。', romaji: 'TANUKIGAOTIBANIBAKEMASU' },
+  { kanji: '羊が牧場で草を食べます。', hira: 'ひつじがぼくじょうでくさをたべます。', romaji: 'HITUZIGABOKUZYOUDEKUSAWOTABEMASU' },
+  { kanji: '背筋を伸ばして座ります。', hira: 'せすじをのばしてすわります。', romaji: 'SESUZIWONOBASITESUWARIMASU' },
+  { kanji: '膝を曲げて軽く跳びます。', hira: 'ひざをまげてかるくとびます。', romaji: 'HIZAWOMAGETEKARUKUTOBIMASU' },
+  { kanji: '深呼吸で気持ちを静めます。', hira: 'しんこきゅうできもちをしずめます。', romaji: 'SINNKOKYUUDEKIMOTIWOSIZUMEMASU' },
+  { kanji: '湯冷ましをこまめに飲みます。', hira: 'ゆざましをこまめにのみます。', romaji: 'YUZAMASIWOKOMAMENINOMIMASU' },
+  { kanji: '爪を短く切り揃えます。', hira: 'つめをみじかくきりそろえます。', romaji: 'TUMEWOMIZIKAKUKIRISOROEMASU' },
+  { kanji: '腰を据えて作業します。', hira: 'こしをすえてさぎょうします。', romaji: 'KOSIWOSUETESAGYOUSIMASU' },
+  { kanji: 'まぶたが重くて眠いです。', hira: 'まぶたがおもくてねむいです。', romaji: 'MABUTAGAOMOKUTENEMUIDESU' },
+  { kanji: '額に冷たい布を当てます。', hira: 'ひたいにつめたいぬのをあてます。', romaji: 'HITAINITUMETAINUNOWOATEMASU' },
+  { kanji: '規則正しい生活を心がけます。', hira: 'きそくただしいせいかつをこころがけます。', romaji: 'KISOKUTADASIISEIKATUWOKOKOROGAKEMASU' },
+  { kanji: '野菜を毎食たっぷり取ります。', hira: 'やさいをまいしょくたっぷりとります。', romaji: 'YASAIWOMAISYOKUTAPPURITORIMASU' },
+  { kanji: '優しさに思わず涙ぐみます。', hira: 'やさしさにおもわずなみだぐみます。', romaji: 'YASASISANIOMOWAZUNAMIDAGUMIMASU' },
+  { kanji: '勝利の喜びを分かち合います。', hira: 'しょうりのよろこびをわかちあいます。', romaji: 'SYOURINOYOROKOBIWOWAKATIAIMASU' },
+  { kanji: '不安で胸がざわつきます。', hira: 'ふあんでむねがざわつきます。', romaji: 'HUANNDEMUNEGAZAWATUKIMASU' },
+  { kanji: '小さな親切に感謝します。', hira: 'ちいさなしんせつにかんしゃします。', romaji: 'TIISANASINNSETUNIKANNSYASIMASU' },
+  { kanji: '悔しさをバネに頑張ります。', hira: 'くやしさをばねにがんばります。', romaji: 'KUYASISAWOBANENIGANNBARIMASU' },
+  { kanji: '穏やかな気持ちで過ごします。', hira: 'おだやかなきもちですごします。', romaji: 'ODAYAKANAKIMOTIDESUGOSIMASU' },
+  { kanji: '退屈であくびが出ます。', hira: 'たいくつであくびがでます。', romaji: 'TAIKUTUDEAKUBIGADEMASU' },
+  { kanji: '勇気を出して前に進みます。', hira: 'ゆうきをだしてまえにすすみます。', romaji: 'YUUKIWODASITEMAENISUSUMIMASU' },
+  { kanji: '照れて顔が赤くなります。', hira: 'てれてかおがあかくなります。', romaji: 'TERETEKAOGAAKAKUNARIMASU' },
+  { kanji: '誇らしげに胸を張ります。', hira: 'ほこらしげにむねをはります。', romaji: 'HOKORASIGENIMUNEWOHARIMASU' },
+  { kanji: '畳の上に布団を敷きます。', hira: 'たたみのうえにふとんをしきます。', romaji: 'TATAMINOUENIHUTONNWOSIKIMASU' },
+  { kanji: '障子の破れを張り替えます。', hira: 'しょうじのやぶれをはりかえます。', romaji: 'SYOUZINOYABUREWOHARIKAEMASU' },
+  { kanji: '蛇口を締めて水を止めます。', hira: 'じゃぐちをしめてみずをとめます。', romaji: 'ZYAGUTIWOSIMETEMIZUWOTOMEMASU' },
+  { kanji: '天井の埃を払い落とします。', hira: 'てんじょうのほこりをはらいおとします。', romaji: 'TENNZYOUNOHOKORIWOHARAIOTOSIMASU' },
+  { kanji: '窓の桟を雑巾で拭きます。', hira: 'まどのさんをぞうきんでふきます。', romaji: 'MADONOSANNWOZOUKINNDEHUKIMASU' },
+  { kanji: '扇風機を物置にしまいます。', hira: 'せんぷうきをものおきにしまいます。', romaji: 'SENNPUUKIWOMONOOKINISIMAIMASU' },
+  { kanji: '壊れた椅子を釘で直します。', hira: 'こわれたいすをくぎでなおします。', romaji: 'KOWARETAISUWOKUGIDENAOSIMASU' },
+  { kanji: '庭の雑草を根から抜きます。', hira: 'にわのざっそうをねからぬきます。', romaji: 'NIWANOZASSOUWONEKARANUKIMASU' },
+  { kanji: '포…', hira: 'だめ', romaji: 'DAME' },
+  { kanji: '古い電球を新品に替えます。', hira: 'ふるいでんきゅうをしんぴんにかえます。', romaji: 'HURUIDENNKYUUWOSINNPINNNIKAEMASU' },
+  { kanji: '物干し竿に布団を掛けます。', hira: 'ものほしざおにふとんをかけます。', romaji: 'MONOHOSIZAONIHUTONNWOKAKEMASU' },
+  { kanji: '特売のチラシを見比べます。', hira: 'とくばいのちらしをみくらべます。', romaji: 'TOKUBAINOTIRASIWOMIKURABEMASU' },
+  { kanji: '小銭を財布から出します。', hira: 'こぜにをさいふからだします。', romaji: 'KOZENIWOSAIHUKARADASIMASU' },
+  { kanji: '値引き交渉に挑みます。', hira: 'ねびきこうしょうにいどみます。', romaji: 'NEBIKIKOUSYOUNIIDOMIMASU' },
+  { kanji: 'レジ袋を断って持参します。', hira: 'れじぶくろをことわってじさんします。', romaji: 'REZIBUKUROWOKOTOWATTEZISANNSIMASU' },
+  { kanji: '貯金箱に毎日入れます。', hira: 'ちょきんばこにまいにちいれます。', romaji: 'TYOKINNBAKONIMAINITIIREMASU' },
+  { kanji: '在庫切れで取り寄せます。', hira: 'ざいこぎれでとりよせます。', romaji: 'ZAIKOGIREDETORIYOSEMASU' },
+  { kanji: '包装を丁寧にしてもらいます。', hira: 'ほうそうをていねいにしてもらいます。', romaji: 'HOUSOUWOTEINEINISITEMORAIMASU' },
+  { kanji: '割引券の期限を確かめます。', hira: 'わりびきけんのきげんをたしかめます。', romaji: 'WARIBIKIKENNNOKIGENNWOTASIKAMEMASU' },
+  { kanji: '文房具をまとめ買いします。', hira: 'ぶんぼうぐをまとめがいします。', romaji: 'BUNNBOUGUWOMATOMEGAISIMASU' },
+  { kanji: '帳簿に支出を記録します。', hira: 'ちょうぼにししゅつをきろくします。', romaji: 'TYOUBONISISYUTUWOKIROKUSIMASU' },
+  { kanji: '地理の地図を暗記します。', hira: 'ちりのちずをあんきします。', romaji: 'TIRINOTIZUWOANNKISIMASU' },
+  { kanji: '歴史の年号を覚えます。', hira: 'れきしのねんごうをおぼえます。', romaji: 'REKISINONENNGOUWOOBOEMASU' },
+  { kanji: '理科の実験で観察します。', hira: 'りかのじっけんでかんさつします。', romaji: 'RIKANOZIKKENNDEKANNSATUSIMASU' },
+  { kanji: '分数の計算を練習します。', hira: 'ぶんすうのけいさんをれんしゅうします。', romaji: 'BUNNSUUNOKEISANNWORENNSYUUSIMASU' },
+  { kanji: '国語で物語を音読します。', hira: 'こくごでものがたりをおんどくします。', romaji: 'KOKUGODEMONOGATARIWOONNDOKUSIMASU' },
+  { kanji: '習字で太い線を引きます。', hira: 'しゅうじでふといせんをひきます。', romaji: 'SYUUZIDEHUTOISENNWOHIKIMASU' },
+  { kanji: '図工で粘土をこねます。', hira: 'ずこうでねんどをこねます。', romaji: 'ZUKOUDENENNDOWOKONEMASU' },
+  { kanji: '体育で跳び箱を跳びます。', hira: 'たいいくでとびばこをとびます。', romaji: 'TAIIKUDETOBIBAKOWOTOBIMASU' },
+  { kanji: '英単語を毎日書き取ります。', hira: 'えいたんごをまいにちかきとります。', romaji: 'EITANNGOWOMAINITIKAKITORIMASU' },
+  { kanji: '道徳で思いやりを学びます。', hira: 'どうとくでおもいやりをまなびます。', romaji: 'DOUTOKUDEOMOIYARIWOMANABIMASU' },
+  { kanji: '正月に門松を飾ります。', hira: 'しょうがつにかどまつをかざります。', romaji: 'SYOUGATUNIKADOMATUWOKAZARIMASU' },
+  { kanji: '節分に豆を力強くまきます。', hira: 'せつぶんにまめをちからづよくまきます。', romaji: 'SETUBUNNNIMAMEWOTIKARADUYOKUMAKIMASU' },
+  { kanji: '雛人形を段に並べます。', hira: 'ひなにんぎょうをだんにならべます。', romaji: 'HINANINNGYOUWODANNNINARABEMASU' },
+  { kanji: '端午の節句に兜を飾ります。', hira: 'たんごのせっくにかぶとをかざります。', romaji: 'TANNGONOSEKKUNIKABUTOWOKAZARIMASU' },
+  { kanji: '七夕に短冊を吊るします。', hira: 'たなばたにたんざくをつるします。', romaji: 'TANABATANITANNZAKUWOTURUSIMASU' },
+  { kanji: '盆踊りを輪になって踊ります。', hira: 'ぼんおどりをわになっておどります。', romaji: 'BONNODORIWOWANINATTEODORIMASU' },
+  { kanji: '紅葉狩りに山へ出かけます。', hira: 'もみじがりにやまへでかけます。', romaji: 'MOMIZIGARINIYAMAHEDEKAKEMASU' },
+  { kanji: '大晦日に蕎麦を食べます。', hira: 'おおみそかにそばをたべます。', romaji: 'OOMISOKANISOBAWOTABEMASU' },
+  { kanji: '花火が夜空を彩ります。', hira: 'はなびがよぞらをいろどります。', romaji: 'HANABIGAYOZORAWOIRODORIMASU' },
+  { kanji: '豆まきで鬼を追い払います。', hira: 'まめまきでおにをおいはらいます。', romaji: 'MAMEMAKIDEONIWOOIHARAIMASU' },
+  { kanji: '特急に乗って海辺へ行きます。', hira: 'とっきゅうにのってうみべへいきます。', romaji: 'TOKKYUUNINOTTEUMIBEHEIKIMASU' },
+  { kanji: '展望台から景色を眺めます。', hira: 'てんぼうだいからけしきをながめます。', romaji: 'TENNBOUDAIKARAKESIKIWONAGAMEMASU' },
+  { kanji: '民宿で郷土料理を味わいます。', hira: 'みんしゅくできょうどりょうりをあじわいます。', romaji: 'MINNSYUKUDEKYOUDORYOURIWOAZIWAIMASU' },
+  { kanji: '渡し船で対岸へ渡ります。', hira: 'わたしぶねでたいがんへわたります。', romaji: 'WATASIBUNEDETAIGANNHEWATARIMASU' },
+  { kanji: '砂丘をらくだに乗って進みます。', hira: 'さきゅうをらくだにのってすすみます。', romaji: 'SAKYUUWORAKUDANINOTTESUSUMIMASU' },
+  { kanji: '灯台の階段を登ります。', hira: 'とうだいのかいだんをのぼります。', romaji: 'TOUDAINOKAIDANNWONOBORIMASU' },
+  { kanji: '露天風呂で星を眺めます。', hira: 'ろてんぶろでほしをながめます。', romaji: 'ROTENNBURODEHOSIWONAGAMEMASU' },
+  { kanji: '土産話をみんなに聞かせます。', hira: 'みやげばなしをみんなにきかせます。', romaji: 'MIYAGEBANASIWOMINNNANIKIKASEMASU' },
+  { kanji: '時刻表を見て乗り換えます。', hira: 'じこくひょうをみてのりかえます。', romaji: 'ZIKOKUHYOUWOMITENORIKAEMASU' },
+  { kanji: '峠を越えて隣町へ抜けます。', hira: 'とうげをこえてとなりまちへぬけます。', romaji: 'TOUGEWOKOETETONARIMATIHENUKEMASU' },
+  { kanji: '朝顔の蔓が棒に巻きつきます。', hira: 'あさがおのつるがぼうにまきつきます。', romaji: 'ASAGAONOTURUGABOUNIMAKITUKIMASU' },
+  { kanji: '球根を花壇に埋めます。', hira: 'きゅうこんをかだんにうめます。', romaji: 'KYUUKONNWOKADANNNIUMEMASU' },
+  { kanji: '若葉が日差しを浴びます。', hira: 'わかばがひざしをあびます。', romaji: 'WAKABAGAHIZASIWOABIMASU' },
+  { kanji: '雑草を抜いて土を耕します。', hira: 'ざっそうをぬいてつちをたがやします。', romaji: 'ZASSOUWONUITETUTIWOTAGAYASIMASU' },
+  { kanji: '向日葵が空を見上げます。', hira: 'ひまわりがそらをみあげます。', romaji: 'HIMAWARIGASORAWOMIAGEMASU' },
+  { kanji: '苗木に支柱を添えます。', hira: 'なえぎにしちゅうをそえます。', romaji: 'NAEGINISITYUUWOSOEMASU' },
+  { kanji: '落ち葉を集めて肥やします。', hira: 'おちばをあつめてこやします。', romaji: 'OTIBAWOATUMETEKOYASIMASU' },
+  { kanji: '盆栽の枝を丁寧に剪定します。', hira: 'ぼんさいのえだをていねいにせんていします。', romaji: 'BONNSAINOEDAWOTEINEINISENNTEISIMASU' },
+  { kanji: '種を蒔いて芽を待ちます。', hira: 'たねをまいてめをまちます。', romaji: 'TANEWOMAITEMEWOMATIMASU' },
+  { kanji: '薔薇の棘に気を付けます。', hira: 'ばらのとげにきをつけます。', romaji: 'BARANOTOGENIKIWOTUKEMASU' },
+  { kanji: '鋏で紙を真っ直ぐ切ります。', hira: 'はさみでかみをまっすぐきります。', romaji: 'HASAMIDEKAMIWOMASSUGUKIRIMASU' },
+  { kanji: '定規で線を引きます。', hira: 'じょうぎでせんをひきます。', romaji: 'ZYOUGIDESENNWOHIKIMASU' },
+  { kanji: '糊で台紙に貼り付けます。', hira: 'のりでだいしにはりつけます。', romaji: 'NORIDEDAISINIHARITUKEMASU' },
+  { kanji: '画鋲で地図を壁に留めます。', hira: 'がびょうでちずをかべにとめます。', romaji: 'GABYOUDETIZUWOKABENITOMEMASU' },
+  { kanji: '万年筆にインクを入れます。', hira: 'まんねんひつにいんくをいれます。', romaji: 'MANNNENNHITUNIINNKUWOIREMASU' },
+  { kanji: '輪ゴムで札束をまとめます。', hira: 'わごむでさつたばをまとめます。', romaji: 'WAGOMUDESATUTABAWOMATOMEMASU' },
+  { kanji: '懐中電灯で足元を照らします。', hira: 'かいちゅうでんとうであしもとをてらします。', romaji: 'KAITYUUDENNTOUDEASIMOTOWOTERASIMASU' },
+  { kanji: '梯子を立て掛けて登ります。', hira: 'はしごをたてかけてのぼります。', romaji: 'HASIGOWOTATEKAKETENOBORIMASU' },
+  { kanji: '雑巾を固く絞ります。', hira: 'ぞうきんをかたくしぼります。', romaji: 'ZOUKINNWOKATAKUSIBORIMASU' },
+  { kanji: '画板に紙を挟みます。', hira: 'がばんにかみをはさみます。', romaji: 'GABANNNIKAMIWOHASAMIMASU' },
+  { kanji: '夕立で道がぬかるみます。', hira: 'ゆうだちでみちがぬかるみます。', romaji: 'YUUDATIDEMITIGANUKARUMIMASU' },
+  { kanji: '暴風で看板が揺れます。', hira: 'ぼうふうでかんばんがゆれます。', romaji: 'BOUHUUDEKANNBANNGAYUREMASU' },
+  { kanji: '避難袋を玄関に備えます。', hira: 'ひなんぶくろをげんかんにそなえます。', romaji: 'HINANNBUKUROWOGENNKANNNISONAEMASU' },
+  { kanji: '防災頭巾を素早く被ります。', hira: 'ぼうさいずきんをすばやくかぶります。', romaji: 'BOUSAIZUKINNWOSUBAYAKUKABURIMASU' },
+  { kanji: '停電で蝋燭を灯します。', hira: 'ていでんでろうそくをともします。', romaji: 'TEIDENNDEROUSOKUWOTOMOSIMASU' },
+  { kanji: '猛暑で日傘をさします。', hira: 'もうしょでひがさをさします。', romaji: 'MOUSYODEHIGASAWOSASIMASU' },
+  { kanji: '吹雪で視界が悪いです。', hira: 'ふぶきでしかいがわるいです。', romaji: 'HUBUKIDESIKAIGAWARUIDESU' },
+  { kanji: '堤防が水位を防ぎます。', hira: 'ていぼうがすいいをふせぎます。', romaji: 'TEIBOUGASUIIWOHUSEGIMASU' },
+  { kanji: '地震に備えて家具を固定します。', hira: 'じしんにそなえてかぐをこていします。', romaji: 'ZISINNNISONAETEKAGUWOKOTEISIMASU' },
+  { kanji: '警報が町中に響きます。', hira: 'けいほうがまちじゅうにひびきます。', romaji: 'KEIHOUGAMATIZYUUNIHIBIKIMASU' },
+  { kanji: '久々に旧友と再会します。', hira: 'ひさびさにきゅうゆうとさいかいします。', romaji: 'HISABISANIKYUUYUUTOSAIKAISIMASU' },
+  { kanji: '近所の人と立ち話をします。', hira: 'きんじょのひととたちばなしをします。', romaji: 'KINNZYONOHITOTOTATIBANASIWOSIMASU' },
+  { kanji: '後輩の悩みに耳を傾けます。', hira: 'こうはいのなやみにみみをかたむけます。', romaji: 'KOUHAINONAYAMINIMIMIWOKATAMUKEMASU' },
+  { kanji: '伯母に手土産を渡します。', hira: 'おばにてみやげをわたします。', romaji: 'OBANITEMIYAGEWOWATASIMASU' },
+  { kanji: '部下を温かく励まします。', hira: 'ぶかをあたたかくはげまします。', romaji: 'BUKAWOATATAKAKUHAGEMASIMASU' },
+  { kanji: '約束をしっかり守ります。', hira: 'やくそくをしっかりまもります。', romaji: 'YAKUSOKUWOSIKKARIMAMORIMASU' },
+  { kanji: '祖父の昔話に聞き入ります。', hira: 'そふのむかしばなしにききいります。', romaji: 'SOHUNOMUKASIBANASINIKIKIIRIMASU' },
+  { kanji: '赤ん坊を優しくあやします。', hira: 'あかんぼうをやさしくあやします。', romaji: 'AKANNBOUWOYASASIKUAYASIMASU' },
+  { kanji: '恩師に近況を報告します。', hira: 'おんしにきんきょうをほうこくします。', romaji: 'ONNSINIKINNKYOUWOHOUKOKUSIMASU' },
+  { kanji: '隣人に回覧板を回します。', hira: 'りんじんにかいらんばんをまわします。', romaji: 'RINNZINNNIKAIRANNBANNWOMAWASIMASU' },
+  { kanji: '凧を高い空へ揚げます。', hira: 'たこをたかいそらへあげます。', romaji: 'TAKOWOTAKAISORAHEAGEMASU' },
+  { kanji: '独楽を勢いよく回します。', hira: 'こまをいきおいよくまわします。', romaji: 'KOMAWOIKIOIYOKUMAWASIMASU' },
+  { kanji: '折り紙で兜を折ります。', hira: 'おりがみでかぶとをおります。', romaji: 'ORIGAMIDEKABUTOWOORIMASU' },
+  { kanji: '積み木を高く積み上げます。', hira: 'つみきをたかくつみあげます。', romaji: 'TUMIKIWOTAKAKUTUMIAGEMASU' },
+  { kanji: '双六で駒を進めます。', hira: 'すごろくでこまをすすめます。', romaji: 'SUGOROKUDEKOMAWOSUSUMEMASU' },
+  { kanji: '粘土で動物をこしらえます。', hira: 'ねんどでどうぶつをこしらえます。', romaji: 'NENNDODEDOUBUTUWOKOSIRAEMASU' },
+  { kanji: '魚釣りで大物を狙います。', hira: 'さかなつりでおおものをねらいます。', romaji: 'SAKANATURIDEOOMONOWONERAIMASU' },
+  { kanji: '望遠鏡で月を覗きます。', hira: 'ぼうえんきょうでつきをのぞきます。', romaji: 'BOUENNKYOUDETUKIWONOZOKIMASU' },
+  { kanji: '絵日記に思い出を描きます。', hira: 'えにっきにおもいでをえがきます。', romaji: 'ENIKKINIOMOIDEWOEGAKIMASU' },
+  { kanji: '宝探しの地図を作ります。', hira: 'たからさがしのちずをつくります。', romaji: 'TAKARASAGASINOTIZUWOTUKURIMASU' },
+  { kanji: '目覚ましを六時に合わせます。', hira: 'めざましをろくじにあわせます。', romaji: 'MEZAMASIWOROKUZINIAWASEMASU' },
+  { kanji: '予定を手帳に書き込みます。', hira: 'よていをてちょうにかきこみます。', romaji: 'YOTEIWOTETYOUNIKAKIKOMIMASU' },
+  { kanji: '締め切りまで余裕があります。', hira: 'しめきりまでよゆうがあります。', romaji: 'SIMEKIRIMADEYOYUUGAARIMASU' },
+  { kanji: '待ち合わせに早めに着きます。', hira: 'まちあわせにはやめにつきます。', romaji: 'MATIAWASENIHAYAMENITUKIMASU' },
+  { kanji: '昼休みに公園で休みます。', hira: 'ひるやすみにこうえんでやすみます。', romaji: 'HIRUYASUMINIKOUENNDEYASUMIMASU' },
+  { kanji: '週末の予定を立てます。', hira: 'しゅうまつのよていをたてます。', romaji: 'SYUUMATUNOYOTEIWOTATEMASU' },
+  { kanji: '時計の針を一時間進めます。', hira: 'とけいのはりをいちじかんすすめます。', romaji: 'TOKEINOHARIWOITIZIKANNSUSUMEMASU' },
+  { kanji: '放課後に図書室へ寄ります。', hira: 'ほうかごにとしょしつへよります。', romaji: 'HOUKAGONITOSYOSITUHEYORIMASU' },
+  { kanji: '夜更かしを控えめにします。', hira: 'よふかしをひかえめにします。', romaji: 'YOHUKASIWOHIKAEMENISIMASU' },
+  { kanji: '毎晩同じ時刻に寝ます。', hira: 'まいばんおなじじこくにねます。', romaji: 'MAIBANNONAZIZIKOKUNINEMASU' },
+  { kanji: '急がば回れと言います。', hira: 'いそがばまわれといいます。', romaji: 'ISOGABAMAWARETOIIMASU' },
+  { kanji: '塵も積もれば山となります。', hira: 'ちりもつもればやまとなります。', romaji: 'TIRIMOTUMOREBAYAMATONARIMASU' },
+  { kanji: '猿も木から落ちます。', hira: 'さるもきからおちます。', romaji: 'SARUMOKIKARAOTIMASU' },
+  { kanji: '石の上にも三年です。', hira: 'いしのうえにもさんねんです。', romaji: 'ISINOUENIMOSANNNENNDESU' },
+  { kanji: '花より団子と言います。', hira: 'はなよりだんごといいます。', romaji: 'HANAYORIDANNGOTOIIMASU' },
+  { kanji: '善は急げと言います。', hira: 'ぜんはいそげといいます。', romaji: 'ZENNHAISOGETOIIMASU' },
+  { kanji: '備えあれば憂いなしです。', hira: 'そなえあればうれいなしです。', romaji: 'SONAEAREBAUREINASIDESU' },
+  { kanji: '七転び八起きで頑張ります。', hira: 'ななころびやおきでがんばります。', romaji: 'NANAKOROBIYAOKIDEGANNBARIMASU' },
+  { kanji: '笑う門には福が来ます。', hira: 'わらうかどにはふくがきます。', romaji: 'WARAUKADONIHAHUKUGAKIMASU' },
+  { kanji: '時は金なりと言います。', hira: 'ときはかねなりといいます。', romaji: 'TOKIHAKANENARITOIIMASU' },
+  { kanji: '百聞は一見に如かずです。', hira: 'ひゃくぶんはいっけんにしかずです。', romaji: 'HYAKUBUNNHAIKKENNNISIKAZUDESU' },
+  { kanji: '案ずるより産むが易しです。', hira: 'あんずるよりうむがやすしです。', romaji: 'ANNZURUYORIUMUGAYASUSIDESU' },
+  { kanji: '蛙の子は蛙と言います。', hira: 'かえるのこはかえるといいます。', romaji: 'KAERUNOKOHAKAERUTOIIMASU' },
+  { kanji: '能ある鷹は爪を隠します。', hira: 'のうあるたかはつめをかくします。', romaji: 'NOUARUTAKAHATUMEWOKAKUSIMASU' },
+  { kanji: '井の中の蛙大海を知らずです。', hira: 'いのなかのかわずたいかいをしらずです。', romaji: 'INONAKANOKAWAZUTAIKAIWOSIRAZUDESU' },
+  { kanji: '番号札を引いて待ちます。', hira: 'ばんごうふだをひいてまちます。', romaji: 'BANNGOUHUDAWOHIITEMATIMASU' },
+  { kanji: '防波堤に波がぶつかります。', hira: 'ぼうはていになみがぶつかります。', romaji: 'BOUHATEININAMIGABUTUKARIMASU' },
+  { kanji: '美容院で前髪を切ります。', hira: 'びよういんでまえがみをきります。', romaji: 'BIYOUINNDEMAEGAMIWOKIRIMASU' },
+  { kanji: '部屋干しで生乾きになります。', hira: 'へやぼしでなまがわきになります。', romaji: 'HEYABOSIDENAMAGAWAKININARIMASU' },
+  { kanji: '便箋に丁寧な字で書きます。', hira: 'びんせんにていねいなじでかきます。', romaji: 'BINNSENNNITEINEINAZIDEKAKIMASU' },
+  { kanji: '望遠鏡を覗いて星を探します。', hira: 'ぼうえんきょうをのぞいてほしをさがします。', romaji: 'BOUENNKYOUWONOZOITEHOSIWOSAGASIMASU' },
+  { kanji: '豚汁を大鍋で煮込みます。', hira: 'ぶたじるをおおなべでにこみます。', romaji: 'BUTAZIRUWOOONABEDENIKOMIMASU' },
+  { kanji: '文房具屋で鉛筆を選びます。', hira: 'ぶんぼうぐやでえんぴつをえらびます。', romaji: 'BUNNBOUGUYADEENNPITUWOERABIMASU' },
+  { kanji: '暖房を点けて部屋を暖めます。', hira: 'だんぼうをつけてへやをあたためます。', romaji: 'DANNBOUWOTUKETEHEYAWOATATAMEMASU' },
+  { kanji: '銅像の前で記念撮影します。', hira: 'どうぞうのまえできねんさつえいします。', romaji: 'DOUZOUNOMAEDEKINENNSATUEISIMASU' },
+  { kanji: '土台を頑丈に組み立てます。', hira: 'どだいをがんじょうにくみたてます。', romaji: 'DODAIWOGANNZYOUNIKUMITATEMASU' },
+  { kanji: '泥水が道路に溜まります。', hira: 'どろみずがどうろにたまります。', romaji: 'DOROMIZUGADOURONITAMARIMASU' },
+  { kanji: '団地の広場で遊びます。', hira: 'だんちのひろばであそびます。', romaji: 'DANNTINOHIROBADEASOBIMASU' },
+  { kanji: '大豆から豆腐を作ります。', hira: 'だいずからとうふをつくります。', romaji: 'DAIZUKARATOUHUWOTUKURIMASU' },
+  { kanji: '銀世界が一面に広がります。', hira: 'ぎんせかいがいちめんにひろがります。', romaji: 'GINNSEKAIGAITIMENNNIHIROGARIMASU' },
+  { kanji: '行列が駅前まで伸びます。', hira: 'ぎょうれつがえきまえまでのびます。', romaji: 'GYOURETUGAEKIMAEMADENOBIMASU' },
+  { kanji: '合言葉を小声で伝えます。', hira: 'あいことばをこごえでつたえます。', romaji: 'AIKOTOBAWOKOGOEDETUTAEMASU' },
+  { kanji: '画面を指で軽くなぞります。', hira: 'がめんをゆびでかるくなぞります。', romaji: 'GAMENNWOYUBIDEKARUKUNAZORIMASU' },
+  { kanji: '全自動で洗濯機が回ります。', hira: 'ぜんじどうでせんたくきがまわります。', romaji: 'ZENNZIDOUDESENNTAKUKIGAMAWARIMASU' },
+  { kanji: '税込み価格を確かめます。', hira: 'ぜいこみかかくをたしかめます。', romaji: 'ZEIKOMIKAKAKUWOTASIKAMEMASU' },
+  { kanji: '膳を運んで客間に置きます。', hira: 'ぜんをはこんできゃくまにおきます。', romaji: 'ZENNWOHAKONNDEKYAKUMANIOKIMASU' },
+  { kanji: '全身を使って踏ん張ります。', hira: 'ぜんしんをつかってふんばります。', romaji: 'ZENNSINNWOTUKATTEHUNNBARIMASU' },
+  { kanji: '座敷に座布団を並べます。', hira: 'ざしきにざぶとんをならべます。', romaji: 'ZASIKINIZABUTONNWONARABEMASU' },
+  { kanji: '材木を倉庫に積み上げます。', hira: 'ざいもくをそうこにつみあげます。', romaji: 'ZAIMOKUWOSOUKONITUMIAGEMASU' },
+  { kanji: '輪投げで景品を狙います。', hira: 'わなげでけいひんをねらいます。', romaji: 'WANAGEDEKEIHINNWONERAIMASU' },
+  { kanji: '技を磨いて大会に挑みます。', hira: 'わざをみがいてたいかいにいどみます。', romaji: 'WAZAWOMIGAITETAIKAINIIDOMIMASU' },
+  { kanji: '我が家の庭で野菜を育てます。', hira: 'わがやのにわでやさいをそだてます。', romaji: 'WAGAYANONIWADEYASAIWOSODATEMASU' },
+  { kanji: '湧き水を汲んで持ち帰ります。', hira: 'わきみずをくんでもちかえります。', romaji: 'WAKIMIZUWOKUNNDEMOTIKAERIMASU' },
+  { kanji: '屋台で焼きそばを買います。', hira: 'やたいでやきそばをかいます。', romaji: 'YATAIDEYAKISOBAWOKAIMASU' },
+  { kanji: '柳の枝が風に揺れます。', hira: 'やなぎのえだがかぜにゆれます。', romaji: 'YANAGINOEDAGAKAZENIYUREMASU' },
+  { kanji: '雇い主に礼を述べます。', hira: 'やといぬしにれいをのべます。', romaji: 'YATOINUSINIREIWONOBEMASU' },
+  { kanji: '優先席をお年寄りに譲ります。', hira: 'ゆうせんせきをおとしよりにゆずります。', romaji: 'YUUSENNSEKIWOOTOSIYORINIYUZURIMASU' },
+  { kanji: '湯飲みを布巾で拭きます。', hira: 'ゆのみをふきんでふきます。', romaji: 'YUNOMIWOHUKINNDEHUKIMASU' },
+  { kanji: '輸入品を店頭に並べます。', hira: 'ゆにゅうひんをてんとうにならべます。', romaji: 'YUNYUUHINNWOTENNTOUNINARABEMASU' },
+  { kanji: '世論を新聞で読み取ります。', hira: 'よろんをしんぶんでよみとります。', romaji: 'YORONNWOSINNBUNNDEYOMITORIMASU' },
+  { kanji: '予防接種を受けに行きます。', hira: 'よぼうせっしゅをうけにいきます。', romaji: 'YOBOUSESSYUWOUKENIIKIMASU' },
+  { kanji: '腹ごしらえをして出発します。', hira: 'はらごしらえをしてしゅっぱつします。', romaji: 'HARAGOSIRAEWOSITESYUPPATUSIMASU' },
+  { kanji: '発泡酒で喉を潤します。', hira: 'はっぽうしゅでのどをうるおします。', romaji: 'HAPPOUSYUDENODOWOURUOSIMASU' },
+  { kanji: '発電機で明かりを点けます。', hira: 'はつでんきであかりをつけます。', romaji: 'HATUDENNKIDEAKARIWOTUKEMASU' },
+  { kanji: '葉脈を虫眼鏡で観察します。', hira: 'ようみゃくをむしめがねでかんさつします。', romaji: 'YOUMYAKUWOMUSIMEGANEDEKANNSATUSIMASU' },
+  { kanji: '募金箱に小銭を入れます。', hira: 'ぼきんばこにこぜにをいれます。', romaji: 'BOKINNBAKONIKOZENIWOIREMASU' },
+  { kanji: '母音を大きく発音します。', hira: 'ぼいんをおおきくはつおんします。', romaji: 'BOINNWOOOKIKUHATUONNSIMASU' },
+  { kanji: '棒高跳びで記録を狙います。', hira: 'ぼうたかとびできろくをねらいます。', romaji: 'BOUTAKATOBIDEKIROKUWONERAIMASU' },
+  { kanji: '帽子の埃を払い落とします。', hira: 'ぼうしのほこりをはらいおとします。', romaji: 'BOUSINOHOKORIWOHARAIOTOSIMASU' },
+  { kanji: '膨大な資料を整理します。', hira: 'ぼうだいなしりょうをせいりします。', romaji: 'BOUDAINASIRYOUWOSEIRISIMASU' },
+  { kanji: '紫陽花が雨に濡れます。', hira: 'あじさいがあめにぬれます。', romaji: 'AZISAIGAAMENINUREMASU' },
+  { kanji: '座標を地図に書き込みます。', hira: 'ざひょうをちずにかきこみます。', romaji: 'ZAHYOUWOTIZUNIKAKIKOMIMASU' },
+  { kanji: '雑炊を弱火で温めます。', hira: 'ぞうすいをよわびであたためます。', romaji: 'ZOUSUIWOYOWABIDEATATAMEMASU' },
+  { kanji: '属性ごとに札を分けます。', hira: 'ぞくせいごとにふだをわけます。', romaji: 'ZOKUSEIGOTONIHUDAWOWAKEMASU' },
+  { kanji: '続編を心待ちにします。', hira: 'ぞくへんをこころまちにします。', romaji: 'ZOKUHENNWOKOKOROMATINISIMASU' },
+  { kanji: '全粒粉でパンを焼きます。', hira: 'ぜんりゅうふんでぱんをやきます。', romaji: 'ZENNRYUUHUNNDEPANNWOYAKIMASU' },
+  { kanji: '税理士に書類を預けます。', hira: 'ぜいりしにしょるいをあずけます。', romaji: 'ZEIRISINISYORUIWOAZUKEMASU' },
+  { kanji: '膳立てを手早く整えます。', hira: 'ぜんだてをてばやくととのえます。', romaji: 'ZENNDATEWOTEBAYAKUTOTONOEMASU' },
+  { kanji: '図表を使って説明します。', hira: 'ずひょうをつかってせつめいします。', romaji: 'ZUHYOUWOTUKATTESETUMEISIMASU' },
+  { kanji: '頭巾を被って畑へ出ます。', hira: 'ずきんをかぶってはたけへでます。', romaji: 'ZUKINNWOKABUTTEHATAKEHEDEMASU' },
+  { kanji: '図鑑で昆虫を調べます。', hira: 'ずかんでこんちゅうをしらべます。', romaji: 'ZUKANNDEKONNTYUUWOSIRABEMASU' },
+  { kanji: '随筆を寝る前に読みます。', hira: 'ずいひつをねるまえによみます。', romaji: 'ZUIHITUWONERUMAENIYOMIMASU' },
+  { kanji: '髄まで沁みる寒さです。', hira: 'ずいまでしみるさむさです。', romaji: 'ZUIMADESIMIRUSAMUSADESU' },
+  { kanji: '厨房で皿を手早く洗います。', hira: 'ちゅうぼうでさらをてばやくあらいます。', romaji: 'TYUUBOUDESARAWOTEBAYAKUARAIMASU' },
+  { kanji: '駐輪場に自転車を止めます。', hira: 'ちゅうりんじょうにじてんしゃをとめます。', romaji: 'TYUURINNZYOUNIZITENNSYAWOTOMEMASU' },
+  { kanji: '彫刻刀で木を削ります。', hira: 'ちょうこくとうできをけずります。', romaji: 'TYOUKOKUTOUDEKIWOKEZURIMASU' },
+  { kanji: '蝶々が菜の花に止まります。', hira: 'ちょうちょうがなのはなにとまります。', romaji: 'TYOUTYOUGANANOHANANITOMARIMASU' },
+  { kanji: 'ピアノの発表会で演奏します。', hira: 'ぴあののはっぴょうかいでえんそうします。', romaji: 'PIANONOHAPPYOUKAIDEENNSOUSIMASU' },
+  { kanji: 'プリンを冷蔵庫で冷やします。', hira: 'ぷりんをれいぞうこでひやします。', romaji: 'PURINNWOREIZOUKODEHIYASIMASU' },
+  { kanji: '赤いペンで丸を付けます。', hira: 'あかいぺんでまるをつけます。', romaji: 'AKAIPENNDEMARUWOTUKEMASU' },
+  { kanji: '手紙をポストに投函します。', hira: 'てがみをぽすとにとうかんします。', romaji: 'TEGAMIWOPOSUTONITOUKANNSIMASU' },
+  { kanji: '切符を改札機に通します。', hira: 'きっぷをかいさつきにとおします。', romaji: 'KIPPUWOKAISATUKINITOOSIMASU' },
+  { kanji: '喇叭を吹いて行進します。', hira: 'らっぱをふいてこうしんします。', romaji: 'RAPPAWOHUITEKOUSINNSIMASU' },
+  { kanji: '天ぷらを揚げたてで食べます。', hira: 'てんぷらをあげたてでたべます。', romaji: 'TENNPURAWOAGETATEDETABEMASU' },
+  { kanji: '公園を一周散歩します。', hira: 'こうえんをいっしゅうさんぽします。', romaji: 'KOUENNWOISSYUUSANNPOSIMASU' },
+  { kanji: '鉛筆を削って筆箱に入れます。', hira: 'えんぴつをけずってふでばこにいれます。', romaji: 'ENNPITUWOKEZUTTEHUDEBAKONIIREMASU' },
+  { kanji: '試合の前に心配になります。', hira: 'しあいのまえにしんぱいになります。', romaji: 'SIAINOMAENISINNPAININARIMASU' },
+  { kanji: '乾杯して友の門出を祝います。', hira: 'かんぱいしてとものかどでをいわいます。', romaji: 'KANNPAISITETOMONOKADODEWOIWAIMASU' },
+  { kanji: '先輩に丁寧に挨拶します。', hira: 'せんぱいにていねいにあいさつします。', romaji: 'SENNPAINITEINEINIAISATUSIMASU' },
+  { kanji: 'たんぽぽの綿毛が飛びます。', hira: 'たんぽぽのわたげがとびます。', romaji: 'TANNPOPONOWATAGEGATOBIMASU' },
+  { kanji: 'プールで平泳ぎを習います。', hira: 'ぷーるでひらおよぎをならいます。', romaji: 'PU-RUDEHIRAOYOGIWONARAIMASU' },
+  { kanji: 'コップに麦茶を注ぎます。', hira: 'こっぷにむぎちゃをそそぎます。', romaji: 'KOPPUNIMUGITYAWOSOSOGIMASU' },
+  { kanji: 'パンダが笹を抱えて食べます。', hira: 'ぱんだがささをかかえてたべます。', romaji: 'PANNDAGASASAWOKAKAETETABEMASU' },
+  { kanji: '星がぴかぴか瞬きます。', hira: 'ほしがぴかぴかまたたきます。', romaji: 'HOSIGAPIKAPIKAMATATAKIMASU' },
+  { kanji: '塀に白いペンキを塗ります。', hira: 'へいにしろいぺんきをぬります。', romaji: 'HEINISIROIPENNKIWONURIMASU' },
+  { kanji: '小さな鞄をポケットに入れます。', hira: 'ちいさなかばんをぽけっとにいれます。', romaji: 'TIISANAKABANNWOPOKETTONIIREMASU' },
+  { kanji: '散歩の途中で雨に降られます。', hira: 'さんぽのとちゅうであめにふられます。', romaji: 'SANNPONOTOTYUUDEAMENIHURAREMASU' },
+  { kanji: '立派な作品を展示します。', hira: 'りっぱなさくひんをてんじします。', romaji: 'RIPPANASAKUHINNWOTENNZISIMASU' },
+  { kanji: '湿布を貼って腫れを抑えます。', hira: 'しっぷをはってはれをおさえます。', romaji: 'SIPPUWOHATTEHAREWOOSAEMASU' },
 ];
 
 // ── KEYBOARD LAYOUT ───────────────────────────────────
