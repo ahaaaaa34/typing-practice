@@ -65,6 +65,15 @@ header {
 }
 .btn-end:hover { background: rgba(255,255,255,.26); }
 .btn-end:active { transform: scale(.96); }
+.btn-icon {
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35);
+  border-radius: 999px; width: 34px; height: 34px; padding: 0;
+  font-size: 15px; line-height: 1; cursor: pointer;
+  transition: background .15s, transform .1s; flex-shrink: 0;
+}
+.btn-icon:hover { background: rgba(255,255,255,.26); }
+.btn-icon:active { transform: scale(.92); }
+.btn-icon.off { opacity: .5; }
 .mode-toggle { display: flex; background: rgba(255,255,255,.12); border-radius: 999px; padding: 3px; }
 .mode-btn {
   border: none; background: transparent; color: rgba(255,255,255,.7);
@@ -322,6 +331,7 @@ header {
     </div>
     <span class="elapsed-label">経過時間</span>
     <div class="elapsed-text" id="elapsedText">0分 00秒</div>
+    <button class="btn-icon" id="speakBtn" onclick="toggleSpeak()" title="読み上げ オン/オフ">🔊</button>
     <button class="btn-end" onclick="endGame()">✕ 終了</button>
   </div>
 </header>
@@ -1801,6 +1811,42 @@ function applyModeClass() {
   document.body.classList.toggle('mode-latin', mode !== 'ja');
   document.body.classList.toggle('mode-word', mode === 'word');
 }
+
+// ── READ-ALOUD (Web Speech API) ───────────────────────
+let speakOn = true;
+const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+function sayText(text, lang, rate) {
+  if (!text) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang; u.rate = rate || 1;
+  speechSynthesis.speak(u);     // utterances queue and play in order
+}
+// Reads the current question aloud. English modes read English then the
+// Japanese gloss (both); Japanese mode reads the Japanese sentence.
+function speakCurrent() {
+  if (!speakOn || !ttsSupported) return;
+  const s = currentSentence();
+  if (!s) return;
+  try { speechSynthesis.cancel(); } catch (e) {}
+  if (mode === 'ja') {
+    sayText(s.kanji, 'ja-JP', 1);
+  } else if (mode === 'en') {
+    sayText(s.text, 'en-US', 0.95);
+    sayText(s.ja, 'ja-JP', 1);
+  } else { // word
+    sayText(s.word, 'en-US', 0.9);
+    sayText(s.ja, 'ja-JP', 1);
+  }
+}
+function toggleSpeak() {
+  speakOn = !speakOn;
+  const btn = document.getElementById('speakBtn');
+  btn.textContent = speakOn ? '🔊' : '🔇';
+  btn.classList.toggle('off', !speakOn);
+  if (!speakOn) { try { speechSynthesis.cancel(); } catch (e) {} }
+  else if (running) speakCurrent();
+}
+
 let pool = [];
 let units = [];   // typing units of current sentence
 let unitIdx = 0;  // which unit we're on
@@ -1979,6 +2025,7 @@ function startGame() {
   updateElapsedDisplay();
   loadSentence();
   updateUI();
+  speakCurrent();
 
   clearInterval(timerID);
   timerID = setInterval(tick, 1000);
@@ -2140,6 +2187,7 @@ document.addEventListener('keydown', e => {
       sentIdx++;
       loadSentence();
       flashSentence(true);
+      speakCurrent();   // read the next question aloud
     }
   }
   updateUI();
