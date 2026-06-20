@@ -74,6 +74,21 @@ header {
 .btn-icon:hover { background: rgba(255,255,255,.26); }
 .btn-icon:active { transform: scale(.92); }
 .btn-icon.off { opacity: .5; }
+.volume-control {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(255,255,255,.12); border-radius: 999px; padding: 3px 5px;
+}
+.volume-btn {
+  width: 26px; height: 26px; border: 0; border-radius: 50%;
+  background: transparent; color: #fff; cursor: pointer;
+  font-size: 17px; font-weight: 800; line-height: 1;
+}
+.volume-btn:hover { background: rgba(255,255,255,.18); }
+.volume-btn:disabled { opacity: .3; cursor: default; }
+.volume-value {
+  min-width: 36px; text-align: center; font-size: 10px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 .mode-toggle { display: flex; background: rgba(255,255,255,.12); border-radius: 999px; padding: 3px; }
 .mode-btn {
   border: none; background: transparent; color: rgba(255,255,255,.7);
@@ -90,6 +105,7 @@ header {
   .hdr-title::before { display: none; }
   .hdr-title { font-size: 16px; }
   .hdr-right { gap: 8px; }
+  .volume-value { display: none; }
 }
 
 /* ── GAME AREA ── */
@@ -132,11 +148,9 @@ header {
 .mode-latin .kanji-text, .mode-latin .cs-kanji { display: none; }
 .mode-latin .romaji-text { letter-spacing: 1px; }
 .mode-latin .hira-text { font-size: 15px; color: var(--mu); margin-bottom: 14px; letter-spacing: 0; }
-.mode-latin .cs-hira { font-size: 12px; }
 /* Word mode: make the single word the prominent line */
 .mode-word .romaji-text { font-size: 30px; letter-spacing: 2px; }
 .mode-word .hira-text { font-size: 16px; color: var(--ink); }
-.mode-word .cs-romaji { font-size: 20px; }
 .r-done { color: var(--faint); }
 .r-cursor {
   color: white; background: var(--ok);
@@ -227,19 +241,14 @@ header {
 .fng-rp .fng-bar { height: 42px; }
 .fng-th .fng-bar { height: 34px; border-radius: 7px; width: 34px; }
 
-/* Center example sentence (between the hands) */
+/* Bottom reference panel: just the meaning text (kanji / translation) */
 .center-sentence {
-  flex: 1; min-width: 240px; max-width: 460px;
-  text-align: center; padding: 0 14px;
-  border-left: 1px solid var(--br); border-right: 1px solid var(--br);
+  flex: 1; max-width: 640px; text-align: center; padding: 0 14px;
 }
-.cs-kanji { font-size: 19px; font-weight: 700; color: var(--ink); margin-bottom: 5px; line-height: 1.4; }
-.cs-hira  { font-size: 11px; color: var(--muted); margin-bottom: 7px; letter-spacing: .04em; }
-.cs-romaji {
-  font-size: 16px; font-weight: 700; letter-spacing: 1.5px;
-  font-family: 'SF Mono', 'Roboto Mono', 'Courier New', monospace; line-height: 1.6;
-  overflow-wrap: break-word; word-break: normal;
-}
+.cs-kanji { font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1.5; }
+.cs-hira  { font-size: 16px; color: var(--ink); line-height: 1.5; }
+.cs-romaji { display: none; }                 /* no romaji/English duplicate here */
+body:not(.mode-latin) .cs-hira { display: none; }  /* JP shows only the kanji */
 
 /* ── OVERLAYS ── */
 .overlay {
@@ -332,6 +341,11 @@ header {
     <span class="elapsed-label">経過時間</span>
     <div class="elapsed-text" id="elapsedText">0分 00秒</div>
     <button class="btn-icon" id="speakBtn" onclick="toggleSpeak()" title="読み上げ オン/オフ">🔊</button>
+    <div class="volume-control" aria-label="読み上げ音量">
+      <button class="volume-btn" id="volumeDown" onclick="changeVolume(-0.2)" aria-label="音量を下げる">−</button>
+      <span class="volume-value" id="volumeValue">100%</span>
+      <button class="volume-btn" id="volumeUp" onclick="changeVolume(0.2)" aria-label="音量を上げる" disabled>＋</button>
+    </div>
     <button class="btn-end" onclick="endGame()">✕ 終了</button>
   </div>
 </header>
@@ -1814,15 +1828,64 @@ function applyModeClass() {
 
 // ── READ-ALOUD (Web Speech API) ───────────────────────
 let speakOn = true;
+let speechVolume = 1;
 const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+
+// Prefer the most modern installed voice for each language. Microsoft
+// "Online/Natural/Neural", Apple Premium/Enhanced/Siri and Google network
+// voices win; the dated built-ins (Kyoko, Otoya, Alex, Fred…) lose.
+if (ttsSupported) { speechSynthesis.getVoices(); speechSynthesis.addEventListener('voiceschanged', () => {}); }
+function naturalVoice(lang) {
+  if (!ttsSupported) return null;
+  const language = lang.slice(0, 2).toLowerCase();
+  const candidates = speechSynthesis.getVoices().filter(v =>
+    (v.lang || '').toLowerCase().startsWith(language));
+  if (!candidates.length) return null;
+
+  const quality = voice => {
+    const label = `${voice.name || ''} ${voice.voiceURI || ''}`.toLowerCase();
+    let score = 0;
+    if (/online|natural|neural/.test(label)) score += 1000; // MS Edge online — best
+    if (/premium/.test(label)) score += 880;
+    if (/enhanced/.test(label)) score += 820;
+    if (/siri/.test(label)) score += 760;
+    if (/google/.test(label)) score += 640;                 // Chrome network voices
+    if (/\b(ava|samantha|allison|serena|aria|jenny|nanami)\b/.test(label)) score += 200;
+    if (/\b(kyoko|otoya|o-ren|alex|fred|albert|agnes|kathy|princess|vicki|victoria|junior|ralph)\b/.test(label)) score -= 300;
+    if (!voice.localService) score += 150;                  // network → usually modern
+    if ((voice.lang || '').toLowerCase() === lang.toLowerCase()) score += 30;
+    return score;
+  };
+
+  return candidates.sort((a, b) => quality(b) - quality(a))[0];
+}
+
 function sayText(text, lang, rate) {
   if (!text) return;
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang; u.rate = rate || 1;
+  const voice = naturalVoice(lang);
+  u.lang = lang;
+  u.rate = rate || 1;
+  u.volume = speechVolume;
+  if (voice) u.voice = voice;
   speechSynthesis.speak(u);     // utterances queue and play in order
 }
-// Reads the current question aloud. English modes read English then the
-// Japanese gloss (both); Japanese mode reads the Japanese sentence.
+
+// Read one whitespace-delimited English word, beginning at a typing-unit index.
+function speakEnglishWordFrom(startIndex) {
+  let i = startIndex;
+  while (i < units.length && units[i].primary === ' ') i++;
+  let word = '';
+  while (i < units.length && units[i].primary !== ' ') {
+    word += units[i].disp;
+    i++;
+  }
+  word = word.replace(/[.,!?;:]+$/g, '');
+  if (word) sayText(word, 'en-US', 0.9);
+}
+
+// Reads the current question aloud. Sentence mode starts with the first
+// English word; each later word is announced after its preceding space.
 function speakCurrent() {
   if (!speakOn || !ttsSupported) return;
   const s = currentSentence();
@@ -1831,8 +1894,7 @@ function speakCurrent() {
   if (mode === 'ja') {
     sayText(s.kanji, 'ja-JP', 1);
   } else if (mode === 'en') {
-    sayText(s.text, 'en-US', 0.95);
-    sayText(s.ja, 'ja-JP', 1);
+    speakEnglishWordFrom(0);
   } else { // word
     sayText(s.word, 'en-US', 0.9);
     sayText(s.ja, 'ja-JP', 1);
@@ -1845,6 +1907,14 @@ function toggleSpeak() {
   btn.classList.toggle('off', !speakOn);
   if (!speakOn) { try { speechSynthesis.cancel(); } catch (e) {} }
   else if (running) speakCurrent();
+}
+
+function changeVolume(delta) {
+  speechVolume = Math.max(0.2, Math.min(1, speechVolume + delta));
+  speechVolume = Math.round(speechVolume * 10) / 10;
+  document.getElementById('volumeValue').textContent = `${Math.round(speechVolume * 100)}%`;
+  document.getElementById('volumeDown').disabled = speechVolume <= 0.2;
+  document.getElementById('volumeUp').disabled = speechVolume >= 1;
 }
 
 let pool = [];
@@ -1874,40 +1944,11 @@ function buildKeyboard() {
 // ── FINGER GUIDE BUILD ────────────────────────────────
 function buildFingerGuide() {
   const guide = document.getElementById('fingerGuide');
-
-  const mkFinger = (id, name) => `
-    <div class="fng-col fng-${id}">
-      <div class="fng-bar" id="fng-${id}"></div>
-      <div class="fng-name">${name}</div>
-    </div>`;
-
-  const leftFingers = [
-    mkFinger('lp','小指'),
-    mkFinger('lr','薬指'),
-    mkFinger('lm','中指'),
-    mkFinger('li','人差し指'),
-  ].join('');
-
-  const rightFingers = [
-    mkFinger('ri','人差し指'),
-    mkFinger('rm','中指'),
-    mkFinger('rr','薬指'),
-    mkFinger('rp','小指'),
-  ].join('');
-
   guide.innerHTML = `
-    <div class="hand-section">
-      <div class="hand-fingers">${leftFingers}</div>
-      <div class="hand-label">左手</div>
-    </div>
     <div class="center-sentence">
       <div class="cs-kanji" id="csKanji">　</div>
       <div class="cs-hira" id="csHira">　</div>
       <div class="cs-romaji" id="csRomaji">　</div>
-    </div>
-    <div class="hand-section">
-      <div class="hand-fingers">${rightFingers}</div>
-      <div class="hand-label">右手</div>
     </div>`;
 }
 
@@ -1967,11 +2008,15 @@ function buildUnits(hira){
   return out;
 }
 // English: one unit per character. Matching is case-insensitive (the keyboard
-// shows uppercase), so primary/opts use the uppercase key, disp keeps the
-// original character (capitals, spaces, commas, periods).
+// shows uppercase), so primary/opts use the uppercase key and disp keeps the
+// original character. Periods stay visible but are not typing targets.
 function buildUnitsEn(text){
   const out = [];
   for (const ch of text){
+    if (ch === '.') {
+      if (out.length) out[out.length - 1].disp += ch;
+      continue;
+    }
     const key = /[a-z]/i.test(ch) ? ch.toUpperCase() : ch;
     out.push({ opts: [key], primary: key, disp: ch });
   }
@@ -2179,6 +2224,7 @@ document.addEventListener('keydown', e => {
 
   if (cur.opts.includes(curBuf)) {
     // Current kana finished
+    const completedWordBoundary = mode === 'en' && cur.primary === ' ';
     unitIdx++;
     curBuf = '';
     if (unitIdx >= units.length) {
@@ -2188,6 +2234,9 @@ document.addEventListener('keydown', e => {
       loadSentence();
       flashSentence(true);
       speakCurrent();   // read the next question aloud
+    } else if (completedWordBoundary && speakOn && ttsSupported) {
+      try { speechSynthesis.cancel(); } catch (e) {}
+      speakEnglishWordFrom(unitIdx);
     }
   }
   updateUI();
